@@ -30,3 +30,7 @@ dist-ssr
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# Firebase CLI cache and debug logs
+.firebase/
+firebase-debug.log

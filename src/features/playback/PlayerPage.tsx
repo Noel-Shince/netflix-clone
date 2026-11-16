@@ -17,7 +17,7 @@ import { fetchPlayableTitle, isNotFound } from './api/playbackApi.ts';
 import type { PlayableTitle } from './types.ts';
 import './PlayerPage.css';
 
-const APP_TITLE = 'Netflix Clone';
+const APP_TITLE = 'Noelflix';
 
 export function PlayerPage() {
   const { id = '' } = useParams();

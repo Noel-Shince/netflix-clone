@@ -24,7 +24,7 @@ function row(id: string, heading: string, path: MovieListPath): RowConfig {
 }
 
 /** Row shown overlapping the bottom of the hero. */
-const HERO_ROW = row('popular', 'Popular on Netflix', '/movie/popular');
+const HERO_ROW = row('popular', 'Popular on Noelflix', '/movie/popular');
 
 const ROWS: RowConfig[] = [
   row('top-rated', 'Blockbuster Movies', '/movie/top_rated'),
