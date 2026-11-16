@@ -4,11 +4,13 @@
  *
  * Renders all three states of the featured-title request: a skeleton while
  * loading, a message with Retry on failure, and the title once loaded.
- * Play and More Info are visual until the player exists (slice 04).
+ * Play opens the player (slice 04); More Info stays visual (no detail view in v1).
  */
 import type { ReactNode } from 'react';
+import { Link } from 'react-router';
 import { InfoIcon, PlayIcon } from '../../../../components/icons/Icons.tsx';
 import { placeholderGradient } from '../../../../lib/placeholderArt.ts';
+import { playerPath } from '../../../../lib/routes.ts';
 import { tmdbErrorMessage } from '../../../../lib/tmdb.ts';
 import type { AsyncResult } from '../../../../lib/useAsync.ts';
 import type { FeaturedTitle } from '../../types.ts';
@@ -63,9 +65,9 @@ export function Hero({ result, onRetry, children }: HeroProps) {
             </h1>
             <p className="hero__synopsis">{title.synopsis}</p>
             <div className="hero__actions">
-              <button type="button" className="hero__button hero__button--play">
+              <Link className="hero__button hero__button--play" to={playerPath(title.id)}>
                 <PlayIcon /> Play
-              </button>
+              </Link>
               <button type="button" className="hero__button hero__button--info">
                 <InfoIcon /> More Info
               </button>

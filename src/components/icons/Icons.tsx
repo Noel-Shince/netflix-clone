@@ -122,3 +122,11 @@ export function YouTubeIcon(props: IconProps) {
     </Svg>
   );
 }
+
+export function ArrowLeftIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M19 12H5M12 19l-7-7 7-7" />
+    </Svg>
+  );
+}
