@@ -33,13 +33,19 @@ export function RequireAuth() {
   return <Outlet />;
 }
 
-/** Logged-out users only (the login page); signed-in users go where they were headed, or home. */
+/**
+ * Logged-out users only (the login page); signed-in users go where they were headed, or home.
+ *
+ * While a sign-in / sign-up is still running the redirect waits: Firebase reports
+ * a new account before its display name is saved, and leaving early would let a
+ * reload lose the name (slice 06).
+ */
 export function RedirectIfAuthed() {
-  const { user } = useAuth();
+  const { user, authActionPending } = useAuth();
   const location = useLocation();
 
   if (user === undefined) return <AuthPending />;
-  if (user) {
+  if (user && !authActionPending) {
     const from = (location.state as LoginRedirectState | null)?.from;
     return <Navigate to={from ?? '/'} replace />;
   }
