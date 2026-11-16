@@ -1,0 +1,54 @@
+/*
+ * Global styles: reset, design tokens and base typography.
+ * Component-specific styles live next to their component (Component.css).
+ */
+
+:root {
+  /* Colour tokens */
+  --color-bg: #141414;
+  --color-surface: #1f1f1f;
+  --color-text: #ffffff;
+  --color-text-muted: #b3b3b3;
+  --color-brand: #e50914;
+
+  /* Layout tokens */
+  --page-gutter: clamp(16px, 4vw, 48px);
+
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+/* Temporary scaffold placeholder — removed in slice 01. */
+.scaffold {
+  padding: var(--page-gutter);
+}
+
+.scaffold p {
+  margin-top: 8px;
+  color: var(--color-text-muted);
+}
