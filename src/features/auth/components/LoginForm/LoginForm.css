@@ -66,6 +66,9 @@
 }
 
 .login-form__submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 44px;
   margin-top: 8px;
   border: none;
@@ -77,8 +80,14 @@
   cursor: pointer;
 }
 
-.login-form__submit:hover {
+.login-form__submit:hover:not(:disabled) {
   background: #c11119;
+}
+
+/* Busy: keep the brand colour (a greyed button would read as "not allowed")
+   and let the spinner say what is happening. */
+.login-form__submit:disabled {
+  cursor: progress;
 }
 
 .login-form__error {
@@ -125,7 +134,12 @@
   cursor: pointer;
 }
 
-.login-form__switch-button:hover {
+.login-form__switch-button:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.login-form__switch-button:hover:not(:disabled) {
   text-decoration: underline;
 }
 

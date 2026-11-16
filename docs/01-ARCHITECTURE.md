@@ -181,6 +181,10 @@ public/            Static files served as-is (favicon)
   ships in one chunk today; route-level code splitting is an option in slice 07/08 if load time
   matters. The shared navbar imports `logOut` from `lib/`, not from the auth feature, to respect
   ADR-2.
+- **Slice 06 addendum:** `AuthProvider` also exposes `authActionPending` and
+  `runAuthAction(fn)`. `RedirectIfAuthed` holds its redirect while an action is pending, because
+  Firebase reports a new user before `updateProfile(displayName)` finishes; the same flag drives
+  the login button's busy state.
 
 ## Conventions
 
