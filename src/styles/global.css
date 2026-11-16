@@ -43,12 +43,21 @@ img {
   max-width: 100%;
 }
 
-/* Temporary scaffold placeholder — removed in slice 01. */
-.scaffold {
-  padding: var(--page-gutter);
+button {
+  font: inherit;
 }
 
-.scaffold p {
-  margin-top: 8px;
-  color: var(--color-text-muted);
+:focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+/* Hides content visually while keeping it available to screen readers. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

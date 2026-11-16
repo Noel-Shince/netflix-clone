@@ -1,0 +1,135 @@
+.navbar {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px var(--page-gutter);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.75) 10%, transparent);
+  transition: background-color 0.3s ease;
+}
+
+.navbar--solid {
+  background-color: var(--color-bg);
+}
+
+.navbar__left,
+.navbar__right {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2vw, 24px);
+}
+
+.navbar__logo {
+  display: flex;
+  text-decoration: none;
+}
+
+.navbar__links {
+  display: flex;
+  gap: clamp(12px, 1.6vw, 20px);
+  list-style: none;
+}
+
+.navbar__link {
+  color: var(--color-text);
+  font-size: 0.875rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.navbar__link--inert {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.navbar__link.active {
+  font-weight: 700;
+}
+
+.navbar__icon-button,
+.navbar__profile-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.navbar__kids {
+  font-size: 0.875rem;
+}
+
+.navbar__profile {
+  position: relative;
+}
+
+.navbar__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #2b7fff, #6a3dff);
+}
+
+.navbar__caret {
+  font-size: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.navbar__dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 160px;
+  padding-top: 12px;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+/* Open on hover for mouse users and on focus for keyboard users. */
+.navbar__profile:hover .navbar__dropdown,
+.navbar__profile:focus-within .navbar__dropdown {
+  visibility: visible;
+  opacity: 1;
+}
+
+.navbar__profile:hover .navbar__caret,
+.navbar__profile:focus-within .navbar__caret {
+  transform: rotate(180deg);
+}
+
+.navbar__dropdown-item {
+  width: 100%;
+  padding: 14px 18px;
+  border: 1px solid #333;
+  background: rgba(0, 0, 0, 0.9);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.navbar__dropdown-item:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+/* A real mobile menu is slice 07's call; until then, hide the text links. */
+@media (max-width: 900px) {
+  .navbar__links {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar__kids {
+    display: none;
+  }
+}

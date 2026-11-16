@@ -1,0 +1,7 @@
+.home {
+  overflow-x: clip;
+}
+
+.home__rows {
+  padding-bottom: 24px;
+}
