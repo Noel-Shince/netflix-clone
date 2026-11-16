@@ -1,8 +1,9 @@
 /**
  * Deterministic placeholder artwork for titles without an image.
  *
- * Slice 01 ships no image assets (see docs/slices/01-home-page.md), and TMDB
+ * Slices 01–02 ship no image assets (see docs/slices/), and TMDB
  * titles can also lack a backdrop, so this stays useful after slice 03.
+ * Lives in lib/ because both catalog and auth (login backdrop) use it.
  * Same id → same gradient, so cards do not change colour between renders.
  */
 export function placeholderGradient(id: number): string {

@@ -49,3 +49,6 @@ authenticate anyone yet, so slice 05 only has to plug Firebase into one submit h
   an obviously invalid request.
 - The submit placeholder is the seam for slice 05: `handleSubmit` receives a typed
   `LoginFormValues` and is the only function that changes when auth is wired.
+- **Promoted `placeholderGradient`** from `features/catalog/lib/` to `src/lib/placeholderArt.ts`,
+  because the login backdrop reuses it and ADR-2 forbids one feature importing another's internals.
+  Catalog imports were updated; behaviour is unchanged.

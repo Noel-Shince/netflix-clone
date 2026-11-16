@@ -7,7 +7,7 @@
 import type { ReactNode } from 'react';
 import { InfoIcon, PlayIcon } from '../../../../components/icons/Icons.tsx';
 import type { FeaturedTitle } from '../../data/mockTitles.ts';
-import { placeholderGradient } from '../../lib/placeholderArt.ts';
+import { placeholderGradient } from '../../../../lib/placeholderArt.ts';
 import './Hero.css';
 
 interface HeroProps {
