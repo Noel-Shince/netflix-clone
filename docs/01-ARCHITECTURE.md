@@ -31,7 +31,7 @@ The compiled app is deployed to Firebase Hosting in slice 08 — see ADR-8.
 | ----------------------- | --------------------------------------------------------------------------- | ------------------- |
 | UI library              | React                                                                       | 19                  |
 | Build tool / dev server | Vite (`@vitejs/plugin-react`)                                               | 8                   |
-| Routing                 | React Router (added in slice 01)                                            | —                   |
+| Routing                 | React Router (`react-router`, added in slice 01)                            | 8                   |
 | Auth                    | Firebase Authentication, email/password (slice 05)                          | —                   |
 | Movie data              | TMDB API v3 endpoints, v4 bearer token (slice 03)                           | —                   |
 | Styling                 | Plain CSS, one file per component, global tokens in `src/styles/global.css` | —                   |

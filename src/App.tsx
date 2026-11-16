@@ -1,15 +1,20 @@
 /**
- * Root component.
+ * Root component: route table.
  *
- * Scaffold placeholder only. Routing (Home / Login / Player) is added in
- * slice 01 — see docs/slices/ and docs/00-PRD.md for the build order.
+ * `/login` (slice 02) and `/player/:id` (slice 04) are added by their slices.
  */
+import { BrowserRouter, Route, Routes } from 'react-router';
+import { NotFoundPage } from './components/NotFound/NotFoundPage.tsx';
+import { HomePage } from './features/catalog/HomePage.tsx';
+
 function App() {
   return (
-    <main className="scaffold">
-      <h1>Netflix Clone</h1>
-      <p>Scaffold ready. Features are built slice by slice — see docs/.</p>
-    </main>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

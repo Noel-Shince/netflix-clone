@@ -1,0 +1,11 @@
+.logo {
+  display: inline-block;
+  font-family: 'Arial Black', Impact, 'Helvetica Neue', sans-serif;
+  font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--color-brand);
+  transform: scaleY(1.15);
+  user-select: none;
+}
