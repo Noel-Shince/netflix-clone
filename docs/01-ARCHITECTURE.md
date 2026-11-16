@@ -1,9 +1,9 @@
 # 01 — Architecture
 
-|                  |                                 |
-| ---------------- | ------------------------------- |
-| **Status**       | Draft — awaiting owner approval |
-| **Last updated** | 2026-11-16                      |
+|                  |            |
+| ---------------- | ---------- |
+| **Status**       | Approved   |
+| **Last updated** | 2026-11-16 |
 
 Short decision records. Each one says what was chosen, why, and what it costs.
 
@@ -15,14 +15,15 @@ services:
 ```
             ┌──────────────────────────── Browser (React SPA) ───────────────────────────┐
             │                                                                             │
-            │  features/auth  ──►  lib/firebase.js  ──►  Firebase Auth   (sign up / in)   │
-            │  features/catalog ─► lib/tmdb.js      ──►  TMDB REST API   (movie lists)    │
-            │  features/playback ► lib/tmdb.js      ──►  TMDB videos  ──► YouTube embed   │
+            │  features/auth  ──►  lib/firebase.ts  ──►  Firebase Auth   (sign up / in)   │
+            │  features/catalog ─► lib/tmdb.ts      ──►  TMDB REST API   (movie lists)    │
+            │  features/playback ► lib/tmdb.ts      ──►  TMDB videos  ──► YouTube embed   │
             │                                                                             │
             └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-`lib/firebase.js` and `lib/tmdb.js` do not exist yet; they are created by slices 05 and 03.
+`lib/firebase.ts` and `lib/tmdb.ts` do not exist yet; they are created by slices 05 and 03.
+The compiled app is deployed to Firebase Hosting in slice 08 — see ADR-8.
 
 ## Stack
 
@@ -36,8 +37,9 @@ services:
 | Styling                 | Plain CSS, one file per component, global tokens in `src/styles/global.css` | —                   |
 | Lint                    | oxlint (Vite's current template default) with React rules                   | 1.x                 |
 | Format                  | Prettier                                                                    | 3.x                 |
-| CI                      | GitHub Actions: lint, format check, build                                   | —                   |
-| Language                | JavaScript (TypeScript pending owner decision, PRD Q1)                      | —                   |
+| CI                      | GitHub Actions: lint, format check, type-check, build                       | —                   |
+| Language                | TypeScript, strict mode                                                     | 7.x                 |
+| Hosting                 | Firebase Hosting (slice 08)                                                 | —                   |
 
 ## ADR-1: Vite over Create React App
 
@@ -46,7 +48,7 @@ services:
   Vite starts in milliseconds, has first-class env-variable handling, and is what new React
   projects use.
 - **Cost:** If the tutorial uses CRA, a few details differ: env vars use the `VITE_` prefix and
-  `import.meta.env` instead of `REACT_APP_` and `process.env`; the entry file is `src/main.jsx`.
+  `import.meta.env` instead of `REACT_APP_` and `process.env`; the entry file is `src/main.tsx`.
   Component code is unaffected.
 
 ## ADR-2: Feature-based folder structure
@@ -89,7 +91,7 @@ public/            Static files served as-is (favicon)
 
 ## ADR-4: Secrets and API keys
 
-- **Decision:** all config is read from `.env.local` (git-ignored) via `src/lib/env.js`.
+- **Decision:** all config is read from `.env.local` (git-ignored) via `src/lib/env.ts`.
   `.env.example` documents every variable with empty values.
 - **Honest limitation:** in a browser-only app, every `VITE_` variable is compiled into the
   JavaScript bundle and is readable by anyone who opens DevTools. `.env` keeps keys **out of the
@@ -117,9 +119,36 @@ public/            Static files served as-is (favicon)
 - **Cost:** oxlint has a smaller rule/plugin ecosystem than ESLint. If a specific ESLint plugin is
   ever needed, switching is a contained change.
 
+## ADR-7: TypeScript instead of JavaScript
+
+- **Decision:** TypeScript, `strict: true`, no `any` without a comment explaining why. Owner
+  decision, 2026-11-16 (PRD §6, Q1).
+- **Why:** catches the class of bug AI-written code is most prone to — a renamed or mistyped field
+  on a TMDB/Firebase response compiles to `undefined` in JS and breaks silently at runtime; in TS
+  it's a build error. Also reads as more professional for a portfolio piece.
+- **Cost:** the code diverges further from the (presumably JS) tutorial, so following the video
+  line-by-line is no longer possible — each slice adapts the tutorial's JS to typed equivalents.
+  Converting at scaffold time (now) cost about 15 minutes; converting after several slices existed
+  would have cost much more, which is why this was decided before slice 01.
+- **Mechanics:** `tsconfig.app.json` / `tsconfig.node.json` (project references via `tsconfig.json`),
+  `vite-env.d.ts` typing `import.meta.env`, `npm run type-check` (`tsc -b --noEmit`) added to CI
+  ahead of the build step. oxlint lints `.ts`/`.tsx` with no extra config.
+
+## ADR-8: Deploy to Firebase Hosting
+
+- **Decision:** deploy the production build to Firebase Hosting as the final slice (08), once
+  slices 01–07 are merged. Owner decision, 2026-11-16 (PRD §6, Q2).
+- **Why:** a portfolio project with no live link loses most reviewers, who won't clone and run it
+  locally. Firebase Hosting is free at this scale and Firebase is already in the stack for auth, so
+  no new provider or account is introduced.
+- **Cost:** one more slice, and the owner needs the Firebase CLI authenticated locally (or a CI
+  deploy token) to ship updates after v1. Static hosting only — fine, since there is no server.
+- **Note:** this does not change ADR-4's key-exposure tradeoff. The deployed bundle still contains
+  the TMDB token and Firebase web config, same as any local build.
+
 ## Conventions
 
-- Components: `PascalCase.jsx` with a sibling `PascalCase.css`.
+- Components: `PascalCase.tsx` with a sibling `PascalCase.css`.
 - Each module starts with a short comment saying what it is for. Comments explain _why_, not
   _what_.
 - Branches: `feature/0X-slice-name`. Commits: imperative mood ("Add title rows").

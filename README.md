@@ -12,8 +12,8 @@ lands as one small pull request.
 
 ## Tech stack
 
-React 19 · Vite 8 · React Router · Firebase Auth · TMDB API · plain CSS · oxlint · Prettier ·
-GitHub Actions
+React 19 · TypeScript · Vite 8 · React Router · Firebase Auth · TMDB API · plain CSS · oxlint ·
+Prettier · GitHub Actions
 
 ## Getting started
 
@@ -73,6 +73,7 @@ Details and rationale: [docs/01-ARCHITECTURE.md](docs/01-ARCHITECTURE.md).
 - [ ] 05 Firebase login/register
 - [ ] 06 Login loading state
 - [ ] 07 Responsive pass
+- [ ] 08 Deploy to Firebase Hosting
 
 ## Credits and disclaimer
 

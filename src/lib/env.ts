@@ -10,12 +10,13 @@
  * secrets — see docs/01-ARCHITECTURE.md ("Secrets and API keys").
  */
 
+/** Names of the VITE_ variables this app reads, kept in one place so a typo fails to compile. */
+export type EnvVarName = keyof ImportMetaEnv;
+
 /**
  * Returns the value of a required env variable, or throws a clear error.
- * @param {string} name - Variable name, e.g. "VITE_TMDB_READ_TOKEN".
- * @returns {string}
  */
-export function requireEnv(name) {
+export function requireEnv(name: EnvVarName): string {
   const value = import.meta.env[name];
   if (!value) {
     throw new Error(

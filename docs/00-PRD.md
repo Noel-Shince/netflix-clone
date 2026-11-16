@@ -2,7 +2,7 @@
 
 |                     |                                                                                                   |
 | ------------------- | ------------------------------------------------------------------------------------------------- |
-| **Status**          | Draft — awaiting owner approval                                                                   |
+| **Status**          | Approved                                                                                          |
 | **Owner**           | Noel (product, scope, review)                                                                     |
 | **Implementer**     | AI threads, one per slice                                                                         |
 | **Source material** | ["Full Stack Netflix Clone using React JS & Firebase" — GreatStack](https://youtu.be/YQQD67N5pi0) |
@@ -30,19 +30,23 @@ minutes, run it locally in under ten, and see a working app.
 
 Each row becomes one vertical slice: one spec in `docs/slices/`, one branch, one PR.
 
-| #   | Slice                   | What the user gets                                                                  | Feature folder |
-| --- | ----------------------- | ----------------------------------------------------------------------------------- | -------------- |
-| 01  | Home page UI            | Routing, navbar, hero banner, footer, title rows with placeholder data              | `catalog`      |
-| 02  | Login page UI           | Sign-in / sign-up form (UI only, toggles between the two modes)                     | `auth`         |
-| 03  | TMDB movie data         | Title rows show real movies by category (now playing, popular, top rated, upcoming) | `catalog`      |
-| 04  | Video player page       | Clicking a title opens `/player/:id` and plays its trailer from TMDB's video list   | `playback`     |
-| 05  | Firebase login/register | Real sign up, log in, log out; logged-out users are redirected to `/login`          | `auth`         |
-| 06  | Login loading state     | Spinner/disabled button while auth requests are in flight; readable error messages  | `auth`         |
-| 07  | Responsive pass         | Audit and fix layouts at phone, tablet and desktop widths                           | all            |
+| #   | Slice                      | What the user gets                                                                  | Feature folder |
+| --- | -------------------------- | ----------------------------------------------------------------------------------- | -------------- |
+| 01  | Home page UI               | Routing, navbar, hero banner, footer, title rows with placeholder data              | `catalog`      |
+| 02  | Login page UI              | Sign-in / sign-up form (UI only, toggles between the two modes)                     | `auth`         |
+| 03  | TMDB movie data            | Title rows show real movies by category (now playing, popular, top rated, upcoming) | `catalog`      |
+| 04  | Video player page          | Clicking a title opens `/player/:id` and plays its trailer from TMDB's video list   | `playback`     |
+| 05  | Firebase login/register    | Real sign up, log in, log out; logged-out users are redirected to `/login`          | `auth`         |
+| 06  | Login loading state        | Spinner/disabled button while auth requests are in flight; readable error messages  | `auth`         |
+| 07  | Responsive pass            | Audit and fix layouts at phone, tablet and desktop widths                           | all            |
+| 08  | Deploy to Firebase Hosting | Live, linkable demo URL; deploy documented in the README                            | —              |
 
 Note on slice 07: in the tutorial, responsive styling comes last. Here each slice is expected to be
 reasonably responsive when it merges (otherwise `main` is not really "working"); slice 07 is a
 final audit, not the first time mobile is considered.
+
+Note on slice 08: added after owner approval (see §5) — not in the original tutorial. Comes last
+because it deploys whatever is on `main` once slices 01–07 are merged.
 
 ## 4. Scope
 
@@ -71,32 +75,30 @@ Anything above can be proposed later as a new slice, but it is not part of v1.
 
 The aim is "same product, better engineering", not a 1:1 copy.
 
-**Decided (already in the scaffold, low risk):**
+**Decided (in the scaffold):**
 
 1. **Vite instead of Create React App.** CRA was officially deprecated by the React team in
    February 2025. Vite is the current default. If the tutorial uses CRA, this is a deliberate
    deviation; if it already uses Vite, nothing changes. Either way the React code is the same.
 2. **Feature-based folders** (`features/auth`, `features/catalog`, `features/playback`) instead of
    a flat `components/` + `pages/` layout. Scales better and makes each slice's diff self-contained.
-3. **No keys in source code.** All TMDB and Firebase config comes from `.env.local` through one
-   module (`src/lib/env.js`). Tutorials commonly paste keys directly into components; that is the
+3. **TypeScript instead of JavaScript** (owner decision, 2026-11-16). See ADR-7 in
+   [`01-ARCHITECTURE.md`](01-ARCHITECTURE.md).
+4. **No keys in source code.** All TMDB and Firebase config comes from `.env.local` through one
+   module (`src/lib/env.ts`). Tutorials commonly paste keys directly into components; that is the
    single most common red flag in portfolio repos.
-4. **One API layer.** TMDB and Firebase calls live in `src/lib/` (or a feature's `api/` file), not
+5. **One API layer.** TMDB and Firebase calls live in `src/lib/` (or a feature's `api/` file), not
    inline in components, so components stay presentational and calls are easy to change.
-5. **CI on every PR** (lint, format check, build) so `main` provably stays working.
+6. **CI on every PR** (lint, format check, type-check, build) so `main` provably stays working.
+7. **Deployed to Firebase Hosting** (owner decision, 2026-11-16), as slice 08 — see §3.
 
-**Suggested — needs Noel's yes or no (see Open questions):**
+## 6. Decisions log
 
-6. **TypeScript.** Low risk now, expensive later.
-7. **Deploy a live demo** (Firebase Hosting, since Firebase is already in the stack).
-
-## 6. Open questions for the owner
-
-| #   | Question                              | Recommendation                                                                                                                                                                                                                                                                                                                                                               |
-| --- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Q1  | Use TypeScript?                       | **Yes, if you are comfortable reading it.** Types catch the kind of bugs AI-written code tends to have (wrong field names on API responses) and read as more professional. Cost: the code diverges further from the tutorial, so following along with the video gets harder. Converting now is a 10-minute change; converting after 7 slices is not. Decide before slice 01. |
-| Q2  | Deploy a live demo?                   | **Yes.** A portfolio project without a live link loses most reviewers. Firebase Hosting is free at this scale and adds one small slice (08) at the end.                                                                                                                                                                                                                      |
-| Q3  | Keep the "Netflix" name and red logo? | Fine for a clearly labelled learning clone. Using your own wordmark (e.g. "Noelflix") avoids any trademark question and looks more original. Low priority.                                                                                                                                                                                                                   |
+| #   | Question                              | Decision                                                                                                                                                                                                |
+| --- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Q1  | Use TypeScript?                       | **Yes** (2026-11-16). Scaffold converted; see ADR-7.                                                                                                                                                    |
+| Q2  | Deploy a live demo?                   | **Yes** (2026-11-16). Added as slice 08, Firebase Hosting.                                                                                                                                              |
+| Q3  | Keep the "Netflix" name and red logo? | Open. Fine for a clearly labelled learning clone; a custom wordmark (e.g. "Noelflix") would avoid any trademark question and look more original. Low priority — decide any time before the polish pass. |
 
 ## 7. Prerequisites the owner must provide
 
