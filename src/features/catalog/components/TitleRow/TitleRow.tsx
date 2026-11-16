@@ -8,7 +8,7 @@
 import { useRef } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '../../../../components/icons/Icons.tsx';
 import type { CatalogRow } from '../../data/mockTitles.ts';
-import { placeholderGradient } from '../../lib/placeholderArt.ts';
+import { placeholderGradient } from '../../../../lib/placeholderArt.ts';
 import './TitleRow.css';
 
 interface TitleRowProps {

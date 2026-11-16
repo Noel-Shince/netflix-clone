@@ -1,0 +1,71 @@
+.login-page {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Poster wall, tilted and darkened so it reads as texture, not content. */
+.login-page__backdrop {
+  position: absolute;
+  inset: -20%;
+  z-index: -2;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 10px;
+  transform: rotate(-8deg);
+}
+
+.login-page__tile {
+  aspect-ratio: 2 / 3;
+  border-radius: 4px;
+}
+
+/* Vignette over the wall: darkest at the edges and behind the card. */
+.login-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(to bottom, rgb(0 0 0 / 0.8) 0%, rgb(0 0 0 / 0.45) 40%, rgb(0 0 0 / 0.85) 100%),
+    rgb(0 0 0 / 0.35);
+}
+
+.login-page__header {
+  padding: 24px var(--page-gutter);
+}
+
+.login-page__logo {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.login-page__logo .logo {
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+}
+
+.login-page__main {
+  display: flex;
+  justify-content: center;
+  padding: 0 var(--page-gutter) 80px;
+}
+
+/* Netflix's own mobile login drops the image and the card for a flat page. */
+@media (max-width: 600px) {
+  .login-page__backdrop {
+    display: none;
+  }
+
+  .login-page::before {
+    background: var(--color-bg);
+  }
+
+  .login-page__header {
+    padding: 16px var(--page-gutter);
+  }
+
+  .login-page__main {
+    padding: 0 0 40px;
+  }
+}

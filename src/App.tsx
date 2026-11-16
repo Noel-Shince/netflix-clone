@@ -1,10 +1,12 @@
 /**
  * Root component: route table.
  *
- * `/login` (slice 02) and `/player/:id` (slice 04) are added by their slices.
+ * `/player/:id` is added by slice 04. Route protection (redirecting
+ * logged-out users to `/login`) arrives with Firebase Auth in slice 05.
  */
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { NotFoundPage } from './components/NotFound/NotFoundPage.tsx';
+import { LoginPage } from './features/auth/LoginPage.tsx';
 import { HomePage } from './features/catalog/HomePage.tsx';
 
 function App() {
@@ -12,6 +14,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
