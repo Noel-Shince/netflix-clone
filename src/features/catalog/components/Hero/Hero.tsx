@@ -2,42 +2,76 @@
  * Full-width banner for one featured title, with an optional row of titles
  * overlapping its lower edge (the tutorial's layout).
  *
+ * Renders all three states of the featured-title request: a skeleton while
+ * loading, a message with Retry on failure, and the title once loaded.
  * Play and More Info are visual until the player exists (slice 04).
  */
 import type { ReactNode } from 'react';
 import { InfoIcon, PlayIcon } from '../../../../components/icons/Icons.tsx';
-import type { FeaturedTitle } from '../../data/mockTitles.ts';
 import { placeholderGradient } from '../../../../lib/placeholderArt.ts';
+import { tmdbErrorMessage } from '../../../../lib/tmdb.ts';
+import type { AsyncResult } from '../../../../lib/useAsync.ts';
+import type { FeaturedTitle } from '../../types.ts';
 import './Hero.css';
 
 interface HeroProps {
-  title: FeaturedTitle;
+  result: AsyncResult<FeaturedTitle>;
+  onRetry: () => void;
   /** Rendered at the bottom of the banner, over the fade. */
   children?: ReactNode;
 }
 
-export function Hero({ title, children }: HeroProps) {
-  const backgroundImage = title.imageUrl
+export function Hero({ result, onRetry, children }: HeroProps) {
+  const title = result.status === 'success' ? result.data : null;
+  const backgroundImage = title?.imageUrl
     ? `url(${title.imageUrl})`
-    : `radial-gradient(ellipse at 75% 30%, rgba(229, 9, 20, 0.35), transparent 60%), ${placeholderGradient(title.id)}`;
+    : `radial-gradient(ellipse at 75% 30%, rgba(229, 9, 20, 0.25), transparent 60%), ${placeholderGradient(0)}`;
 
   return (
-    <section className="hero" aria-labelledby="hero-title">
+    <section
+      className="hero"
+      aria-labelledby={title ? 'hero-title' : undefined}
+      aria-label={title ? undefined : 'Featured title'}
+      aria-busy={result.status === 'loading'}
+    >
       <div className="hero__backdrop" style={{ backgroundImage }} />
 
       <div className="hero__caption">
-        <h1 id="hero-title" className="hero__title">
-          {title.name}
-        </h1>
-        <p className="hero__synopsis">{title.synopsis}</p>
-        <div className="hero__actions">
-          <button type="button" className="hero__button hero__button--play">
-            <PlayIcon /> Play
-          </button>
-          <button type="button" className="hero__button hero__button--info">
-            <InfoIcon /> More Info
-          </button>
-        </div>
+        {result.status === 'loading' && (
+          <div aria-hidden="true">
+            <div className="skeleton hero__skeleton-title" />
+            <div className="skeleton hero__skeleton-line" />
+            <div className="skeleton hero__skeleton-line hero__skeleton-line--short" />
+          </div>
+        )}
+
+        {result.status === 'error' && (
+          <div role="alert">
+            <p className="hero__error">
+              {tmdbErrorMessage(result.error, 'Couldn’t load today’s featured title.')}
+            </p>
+            <button type="button" className="hero__button hero__button--info" onClick={onRetry}>
+              Retry
+            </button>
+          </div>
+        )}
+
+        {title && (
+          <>
+            <h1 id="hero-title" className="hero__title">
+              {title.name}
+            </h1>
+            <p className="hero__synopsis">{title.synopsis}</p>
+            <div className="hero__actions">
+              <button type="button" className="hero__button hero__button--play">
+                <PlayIcon /> Play
+              </button>
+              <button type="button" className="hero__button hero__button--info">
+                <InfoIcon /> More Info
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {children && <div className="hero__row">{children}</div>}

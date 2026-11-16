@@ -44,6 +44,12 @@
   font-size: clamp(0.9rem, 1.4vw, 1.125rem);
   line-height: 1.45;
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+  /* TMDB synopses vary a lot in length; keep long ones from pushing the row off-screen. */
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
 }
 
 .hero__actions {
@@ -86,4 +92,26 @@
 .hero__row {
   position: relative;
   margin-top: clamp(0px, 4vw, 40px);
+}
+
+.hero__skeleton-title {
+  width: min(420px, 80%);
+  height: clamp(2rem, 6vw, 4.5rem);
+}
+
+.hero__skeleton-line {
+  width: 100%;
+  height: 1rem;
+  margin-top: 16px;
+}
+
+.hero__skeleton-line--short {
+  width: 60%;
+  margin-top: 10px;
+}
+
+.hero__error {
+  margin-bottom: 16px;
+  font-size: clamp(1rem, 1.6vw, 1.25rem);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
 }

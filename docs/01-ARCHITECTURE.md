@@ -22,7 +22,7 @@ services:
             └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-`lib/firebase.ts` and `lib/tmdb.ts` do not exist yet; they are created by slices 05 and 03.
+`lib/tmdb.ts` was added in slice 03 (see ADR-9); `lib/firebase.ts` is created by slice 05.
 The compiled app is deployed to Firebase Hosting in slice 08 — see ADR-8.
 
 ## Stack
@@ -145,6 +145,25 @@ public/            Static files served as-is (favicon)
   deploy token) to ship updates after v1. Static hosting only — fine, since there is no server.
 - **Note:** this does not change ADR-4's key-exposure tradeoff. The deployed bundle still contains
   the TMDB token and Firebase web config, same as any local build.
+
+## ADR-9: TMDB access — bearer token, one client, per-section loading
+
+- **Decision:** all TMDB calls go through `src/lib/tmdb.ts`, authenticated with the v4 **API Read
+  Access Token** in an `Authorization: Bearer` header on v3 endpoints. The short v3 `api_key`
+  query parameter is not used. Added in slice 03.
+- **Why bearer over `api_key`:** it is TMDB's documented default, works on both v3 and v4
+  endpoints, and keeps the credential out of URLs, which end up in browser history, proxy logs
+  and `Referer`-style leaks. It does **not** hide the token from the browser: ADR-4 still applies.
+- **Failure handling:** `429` and `5xx` responses are retried once, waiting for TMDB's
+  `Retry-After` (capped at 5 s); requests time out after 10 s; failures surface as a typed
+  `TmdbError`. Each home-page section (hero and every row) loads through its own `useAsync`
+  call, so one failure shows a local Retry instead of blanking the page.
+- **Caching:** successful responses (and in-flight requests) are cached in memory, keyed by URL,
+  for the life of the page. This dedupes React StrictMode's double effect and avoids refetching
+  when returning to `/`.
+- **Cost / rejected:** no data-fetching library (TanStack Query, SWR). Six GET requests on one
+  page do not justify a dependency; if later slices add mutations, pagination or background
+  refresh, TanStack Query is the upgrade path and `useAsync` is the only thing it replaces.
 
 ## Conventions
 
