@@ -10,8 +10,10 @@
  * which blocks vertical page scroll while the cursor is over a row.
  */
 import { useRef } from 'react';
+import { Link } from 'react-router';
 import { ChevronLeftIcon, ChevronRightIcon } from '../../../../components/icons/Icons.tsx';
 import { placeholderGradient } from '../../../../lib/placeholderArt.ts';
+import { playerPath } from '../../../../lib/routes.ts';
 import { tmdbErrorMessage } from '../../../../lib/tmdb.ts';
 import type { AsyncResult } from '../../../../lib/useAsync.ts';
 import type { CatalogTitle } from '../../types.ts';
@@ -85,24 +87,26 @@ export function TitleRow({ id, heading, result, onRetry }: TitleRowProps) {
           <ul ref={scrollerRef} className="title-row__list">
             {result.data.map((title) => (
               <li key={title.id} className="title-row__card">
-                {title.imageUrl ? (
-                  // Empty alt: the title name is printed right below the image.
-                  <img
-                    className="title-row__art"
-                    src={title.imageUrl}
-                    alt=""
-                    width={300}
-                    height={169}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <div
-                    className="title-row__art"
-                    style={{ backgroundImage: placeholderGradient(title.id) }}
-                  />
-                )}
-                <p className="title-row__name">{title.name}</p>
+                <Link className="title-row__link" to={playerPath(title.id)}>
+                  {title.imageUrl ? (
+                    // Empty alt: the title name is printed right below the image.
+                    <img
+                      className="title-row__art"
+                      src={title.imageUrl}
+                      alt=""
+                      width={300}
+                      height={169}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div
+                      className="title-row__art"
+                      style={{ backgroundImage: placeholderGradient(title.id) }}
+                    />
+                  )}
+                  <p className="title-row__name">{title.name}</p>
+                </Link>
               </li>
             ))}
           </ul>

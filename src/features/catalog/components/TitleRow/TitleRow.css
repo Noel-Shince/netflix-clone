@@ -75,6 +75,31 @@
   border-color: var(--color-text);
 }
 
+.title-row__link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* The scroller clips outlines, so the focus ring is drawn inside the artwork. */
+.title-row__link:focus-visible {
+  outline: none;
+}
+
+.title-row__link:focus-visible .title-row__art {
+  outline: 2px solid var(--color-text);
+  outline-offset: -2px;
+}
+
+.title-row__link:hover .title-row__art {
+  filter: brightness(1.15);
+}
+
+.title-row__link:hover .title-row__name,
+.title-row__link:focus-visible .title-row__name {
+  color: var(--color-text);
+}
+
 .title-row__name {
   margin-top: 6px;
   overflow: hidden;
