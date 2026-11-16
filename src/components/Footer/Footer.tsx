@@ -51,7 +51,7 @@ export function Footer() {
         ))}
       </ul>
 
-      <p className="footer__small">© {CURRENT_YEAR} Netflix clone, a portfolio project.</p>
+      <p className="footer__small">© {CURRENT_YEAR} Noelflix, a Netflix-style portfolio project.</p>
       <p className="footer__small">
         This product uses the TMDB API but is not endorsed or certified by TMDB.
       </p>

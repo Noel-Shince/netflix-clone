@@ -21,7 +21,7 @@ const COPY: Record<
     heading: 'Sign In',
     submit: 'Sign In',
     busy: 'Signing in…',
-    switchPrompt: 'New to Netflix?',
+    switchPrompt: 'New to Noelflix?',
     switchAction: 'Sign up now',
   },
   signUp: {
