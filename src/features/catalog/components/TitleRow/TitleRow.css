@@ -31,6 +31,9 @@
 
 .title-row__card {
   flex: 0 0 clamp(150px, 22vw, 240px);
+  /* Flex items default to min-width: auto (their content), so a long nowrap
+     caption would widen the card, and its 16:9 artwork with it. */
+  min-width: 0;
   scroll-snap-align: start;
 }
 
@@ -69,6 +72,12 @@
   background: transparent;
   color: var(--color-text);
   cursor: pointer;
+}
+
+@media (pointer: coarse) {
+  .title-row__retry {
+    min-height: 44px;
+  }
 }
 
 .title-row__retry:hover {

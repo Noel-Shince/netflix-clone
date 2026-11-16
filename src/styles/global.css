@@ -35,6 +35,8 @@
 
 body {
   min-height: 100vh;
+  /* Mobile browsers: 100vh is the height with the URL bar hidden; dvh is what is visible. */
+  min-height: 100dvh;
   background-color: var(--color-bg);
 }
 

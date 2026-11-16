@@ -93,16 +93,27 @@
   transition: opacity 0.15s ease;
 }
 
-/* Open on hover for mouse users and on focus for keyboard users. */
-.navbar__profile:hover .navbar__dropdown,
-.navbar__profile:focus-within .navbar__dropdown {
+/* Open when toggled (click, tap, Enter / Space) and, for mouse users, on hover.
+   Hover is limited to real hover devices: touch browsers fake :hover on tap
+   and would leave the menu stuck open. */
+.navbar__profile--open .navbar__dropdown {
   visibility: visible;
   opacity: 1;
 }
 
-.navbar__profile:hover .navbar__caret,
-.navbar__profile:focus-within .navbar__caret {
+.navbar__profile--open .navbar__caret {
   transform: rotate(180deg);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .navbar__profile:hover .navbar__dropdown {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .navbar__profile:hover .navbar__caret {
+    transform: rotate(180deg);
+  }
 }
 
 .navbar__dropdown-item {
@@ -131,5 +142,29 @@
 @media (max-width: 480px) {
   .navbar__kids {
     display: none;
+  }
+
+  .navbar__right {
+    gap: 4px;
+  }
+}
+
+/* Touch: 44px tap targets (Apple HIG / WCAG 2.5.5). The logo gets taller hit
+   padding with a matching negative margin, so the bar does not grow. */
+@media (pointer: coarse) {
+  .navbar__icon-button,
+  .navbar__profile-button {
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .navbar__logo {
+    padding-block: 11px;
+    margin-block: -11px;
+  }
+
+  .navbar__dropdown-item {
+    min-height: 44px;
   }
 }
