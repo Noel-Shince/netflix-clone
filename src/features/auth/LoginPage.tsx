@@ -1,13 +1,17 @@
 /**
  * `/login` route: backdrop, wordmark and the sign-in / sign-up card.
  *
- * Slice 02 is UI only. `handleSubmit` is the single seam slice 05 replaces
- * with Firebase sign-in / sign-up calls; nothing else here should change.
+ * `handleSubmit` is the seam between the presentational form (slice 02) and
+ * Firebase (slice 05). Redirecting after success is not done here: once
+ * Firebase reports a user, the `RedirectIfAuthed` guard around this route
+ * sends them on.
  */
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { Logo } from '../../components/Logo/Logo.tsx';
+import { signIn, signUp } from '../../lib/firebase.ts';
 import { placeholderGradient } from '../../lib/placeholderArt.ts';
+import { authErrorMessage } from './api/authErrors.ts';
 import { LoginForm } from './components/LoginForm/LoginForm.tsx';
 import type { LoginFormValues } from './types.ts';
 import './LoginPage.css';
@@ -16,12 +20,19 @@ import './LoginPage.css';
 const BACKDROP_TILES = Array.from({ length: 48 }, (_, i) => i + 1);
 
 export function LoginPage() {
-  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(values: LoginFormValues) {
-    // Placeholder until Firebase Auth is wired in slice 05.
-    const action = values.mode === 'signUp' ? 'Sign-up' : 'Sign-in';
-    setNotice(`${action} is not connected yet. Authentication arrives in a later update.`);
+  async function handleSubmit({ mode, name, email, password, rememberMe }: LoginFormValues) {
+    setError(null);
+    try {
+      if (mode === 'signUp') {
+        await signUp(name, email, password, rememberMe);
+      } else {
+        await signIn(email, password, rememberMe);
+      }
+    } catch (caught) {
+      setError(authErrorMessage(caught));
+    }
   }
 
   return (
@@ -44,7 +55,7 @@ export function LoginPage() {
       </header>
 
       <main className="login-page__main">
-        <LoginForm onSubmit={handleSubmit} notice={notice} />
+        <LoginForm onSubmit={handleSubmit} error={error} onModeChange={() => setError(null)} />
       </main>
     </div>
   );

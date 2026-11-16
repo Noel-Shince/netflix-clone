@@ -30,16 +30,16 @@ minutes, run it locally in under ten, and see a working app.
 
 Each row becomes one vertical slice: one spec in `docs/slices/`, one branch, one PR.
 
-| #   | Slice                      | What the user gets                                                                  | Feature folder |
-| --- | -------------------------- | ----------------------------------------------------------------------------------- | -------------- |
-| 01  | Home page UI               | Routing, navbar, hero banner, footer, title rows with placeholder data              | `catalog`      |
-| 02  | Login page UI              | Sign-in / sign-up form (UI only, toggles between the two modes)                     | `auth`         |
-| 03  | TMDB movie data            | Title rows show real movies by category (now playing, popular, top rated, upcoming) | `catalog`      |
-| 04  | Video player page          | Clicking a title opens `/player/:id` and plays its trailer from TMDB's video list   | `playback`     |
-| 05  | Firebase login/register    | Real sign up, log in, log out; logged-out users are redirected to `/login`          | `auth`         |
-| 06  | Login loading state        | Spinner/disabled button while auth requests are in flight; readable error messages  | `auth`         |
-| 07  | Responsive pass            | Audit and fix layouts at phone, tablet and desktop widths                           | all            |
-| 08  | Deploy to Firebase Hosting | Live, linkable demo URL; deploy documented in the README                            | —              |
+| #   | Slice                      | What the user gets                                                                                  | Feature folder |
+| --- | -------------------------- | --------------------------------------------------------------------------------------------------- | -------------- |
+| 01  | Home page UI               | Routing, navbar, hero banner, footer, title rows with placeholder data                              | `catalog`      |
+| 02  | Login page UI              | Sign-in / sign-up form (UI only, toggles between the two modes)                                     | `auth`         |
+| 03  | TMDB movie data            | Title rows show real movies by category (now playing, popular, top rated, upcoming)                 | `catalog`      |
+| 04  | Video player page          | Clicking a title opens `/player/:id` and plays its trailer from TMDB's video list                   | `playback`     |
+| 05  | Firebase login/register    | Real sign up, log in, log out; logged-out users are redirected to `/login`; readable error messages | `auth`         |
+| 06  | Login loading state        | Spinner/disabled button while auth requests are in flight                                           | `auth`         |
+| 07  | Responsive pass            | Audit and fix layouts at phone, tablet and desktop widths                                           | all            |
+| 08  | Deploy to Firebase Hosting | Live, linkable demo URL; deploy documented in the README                                            | —              |
 
 Note on slice 07: in the tutorial, responsive styling comes last. Here each slice is expected to be
 reasonably responsive when it merges (otherwise `main` is not really "working"); slice 07 is a

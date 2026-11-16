@@ -81,7 +81,7 @@
   background: #c11119;
 }
 
-.login-form__notice {
+.login-form__error {
   padding: 10px 14px;
   border-radius: 4px;
   background: #e87c03;

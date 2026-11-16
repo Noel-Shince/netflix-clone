@@ -32,11 +32,13 @@ const COPY: Record<
 
 interface LoginFormProps {
   onSubmit: (values: LoginFormValues) => void;
-  /** Optional message shown under the button (e.g. the slice-02 placeholder notice). */
-  notice?: string | null;
+  /** Error shown under the button, already worded for the user. */
+  error?: string | null;
+  /** Called when the user toggles sign-in / sign-up (e.g. to clear a stale error). */
+  onModeChange?: (mode: AuthMode) => void;
 }
 
-export function LoginForm({ onSubmit, notice }: LoginFormProps) {
+export function LoginForm({ onSubmit, error, onModeChange }: LoginFormProps) {
   const [mode, setMode] = useState<AuthMode>('signIn');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -49,7 +51,9 @@ export function LoginForm({ onSubmit, notice }: LoginFormProps) {
   const isSignUp = mode === 'signUp';
 
   function switchMode() {
-    setMode(isSignUp ? 'signIn' : 'signUp');
+    const next = isSignUp ? 'signIn' : 'signUp';
+    setMode(next);
+    onModeChange?.(next);
     // Focus the first field once the new mode has rendered, so keyboard users
     // are not left on a button that just changed its meaning.
     requestAnimationFrame(() => {
@@ -135,9 +139,9 @@ export function LoginForm({ onSubmit, notice }: LoginFormProps) {
           {copy.submit}
         </button>
 
-        {notice && (
-          <p className="login-form__notice" role="status">
-            {notice}
+        {error && (
+          <p className="login-form__error" role="alert">
+            {error}
           </p>
         )}
 
