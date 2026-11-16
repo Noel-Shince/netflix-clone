@@ -23,7 +23,8 @@ services:
 ```
 
 `lib/tmdb.ts` was added in slice 03 (see ADR-9); `lib/firebase.ts` in slice 05 (see ADR-10).
-The compiled app is deployed to Firebase Hosting in slice 08 — see ADR-8.
+The compiled app is served from Firebase Hosting and redeployed by GitHub Actions on every
+merge to `main` (slice 08, ADR-8).
 
 ## Stack
 
@@ -37,7 +38,7 @@ The compiled app is deployed to Firebase Hosting in slice 08 — see ADR-8.
 | Styling                 | Plain CSS, one file per component, global tokens in `src/styles/global.css` | —                   |
 | Lint                    | oxlint (Vite's current template default) with React rules                   | 1.x                 |
 | Format                  | Prettier                                                                    | 3.x                 |
-| CI                      | GitHub Actions: lint, format check, type-check, build                       | —                   |
+| CI / CD                 | GitHub Actions: lint, format check, type-check, build; deploy on `main`     | —                   |
 | Language                | TypeScript, strict mode                                                     | 7.x                 |
 | Hosting                 | Firebase Hosting (slice 08)                                                 | —                   |
 
@@ -145,6 +146,15 @@ public/            Static files served as-is (favicon)
   deploy token) to ship updates after v1. Static hosting only — fine, since there is no server.
 - **Note:** this does not change ADR-4's key-exposure tradeoff. The deployed bundle still contains
   the TMDB token and Firebase web config, same as any local build.
+- **Slice 08 addendum — how it ships:** `.github/workflows/deploy.yml` builds `main` with the
+  `VITE_` values from GitHub repository secrets and deploys to the `live` channel with
+  `FirebaseExtended/action-hosting-deploy`, authenticated by a service account limited to
+  Hosting. Chosen over manual `firebase deploy` from a laptop so that `main` is always exactly
+  what is live and no credential sits on a personal machine. `firebase.json` rewrites every
+  route except `/assets/**` to `index.html` (client-side routing), caches hashed assets for a
+  year and forces `index.html` to revalidate. Rejected for now: PR preview channels (preview
+  domains are not Auth-authorised, so login breaks there) and keyless Workload Identity
+  Federation (more setup than one repo justifies). Details: `docs/slices/08-deploy.md`.
 
 ## ADR-9: TMDB access — bearer token, one client, per-section loading
 
@@ -191,5 +201,7 @@ public/            Static files served as-is (favicon)
 - Components: `PascalCase.tsx` with a sibling `PascalCase.css`.
 - Each module starts with a short comment saying what it is for. Comments explain _why_, not
   _what_.
-- Branches: `feature/0X-slice-name`. Commits: imperative mood ("Add title rows").
+- Branches: `feature/0X-slice-name` as the intent. In practice the AI threads ran in a cloud
+  environment that assigns branch names (`claude/project-thread-…`); each PR names its slice
+  instead. Commits: imperative mood ("Add title rows").
 - Every PR links its slice spec and must pass CI before merge.
