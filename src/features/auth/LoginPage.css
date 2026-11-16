@@ -1,6 +1,7 @@
 .login-page {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
   isolation: isolate;
 }
@@ -39,6 +40,14 @@
 .login-page__logo {
   display: inline-block;
   text-decoration: none;
+}
+
+/* Touch: taller hit area for the logo link without moving the header. */
+@media (pointer: coarse) {
+  .login-page__logo {
+    padding-block: 9px;
+    margin-block: -9px;
+  }
 }
 
 .login-page__logo .logo {

@@ -4,6 +4,7 @@
   flex-direction: column;
   justify-content: flex-end;
   min-height: min(100vh, 56.25vw + 200px);
+  min-height: min(100svh, 56.25vw + 200px);
   padding-top: 120px;
   overflow: hidden;
 }
@@ -115,4 +116,35 @@
   margin-bottom: 16px;
   font-size: clamp(1rem, 1.6vw, 1.25rem);
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+}
+
+@media (pointer: coarse) {
+  .hero__button {
+    min-height: 44px;
+  }
+}
+
+/* Phones in landscape: keep the title, synopsis and Play button on one screen. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hero {
+    padding-top: 80px;
+  }
+
+  .hero__caption {
+    max-width: min(520px, 70%);
+  }
+
+  .hero__title {
+    font-size: clamp(1.5rem, 8vh, 2.5rem);
+  }
+
+  .hero__synopsis {
+    margin-top: 10px;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .hero__actions {
+    margin-top: 16px;
+  }
 }

@@ -1,6 +1,7 @@
 .player {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 72px var(--page-gutter) 48px;
   background: #000;
 }
@@ -32,6 +33,7 @@
 .player__stage,
 .player__info {
   width: min(100%, (100vh - 200px) * 16 / 9);
+  width: min(100%, (100dvh - 200px) * 16 / 9);
   min-width: min(100%, 320px);
   margin-inline: auto;
 }
@@ -163,4 +165,24 @@
 
 .player__skeleton-line--short {
   width: 60%;
+}
+
+@media (pointer: coarse) {
+  .player__button {
+    min-height: 44px;
+  }
+}
+
+/* Phones in landscape: let the video use the screen height instead of the
+   desktop cap, while leaving room on the left for the back button. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .player {
+    padding-top: 16px;
+  }
+
+  .player__stage,
+  .player__info {
+    width: min(100% - 128px, (100vh - 32px) * 16 / 9);
+    width: min(100% - 128px, (100dvh - 32px) * 16 / 9);
+  }
 }

@@ -143,6 +143,14 @@
   text-decoration: underline;
 }
 
+/* Touch: a 44px-tall tap area for the checkbox row, without moving the layout. */
+@media (pointer: coarse) {
+  .login-form__remember {
+    min-height: 44px;
+    margin-block: -13px;
+  }
+}
+
 @media (max-width: 600px) {
   .login-form {
     max-width: none;
