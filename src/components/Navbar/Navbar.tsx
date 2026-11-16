@@ -3,10 +3,14 @@
  *
  * Transparent over the hero, solid once the page scrolls. Only "Home" routes
  * anywhere in v1; the other links and icons are visual (search, notifications,
- * profiles and My List are out of scope — PRD §4). Sign-out is wired in slice 05.
+ * profiles and My List are out of scope — PRD §4).
+ *
+ * Sign out only calls Firebase; the route guard then sends the user to /login,
+ * so this shared component needs no knowledge of the auth feature (ADR-2).
  */
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router';
+import { logOut } from '../../lib/firebase.ts';
 import { Logo } from '../Logo/Logo.tsx';
 import { BellIcon, CaretDownIcon, SearchIcon } from '../icons/Icons.tsx';
 import './Navbar.css';
@@ -69,8 +73,9 @@ export function Navbar() {
             <button
               type="button"
               className="navbar__dropdown-item"
-              disabled
-              title="Available once login is added"
+              onClick={() => {
+                logOut().catch((error: unknown) => console.error('Sign out failed', error));
+              }}
             >
               Sign out
             </button>

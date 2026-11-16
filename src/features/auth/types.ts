@@ -1,8 +1,8 @@
 /**
  * Types shared across the auth feature.
  *
- * `LoginFormValues` is the contract slice 05 passes to Firebase: the form
- * produces exactly this shape, so wiring auth never touches the UI.
+ * `LoginFormValues` is the contract between the form and LoginPage's Firebase
+ * calls: the form produces exactly this shape and knows nothing about auth.
  */
 export type AuthMode = 'signIn' | 'signUp';
 

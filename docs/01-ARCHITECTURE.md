@@ -22,7 +22,7 @@ services:
             └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-`lib/tmdb.ts` was added in slice 03 (see ADR-9); `lib/firebase.ts` is created by slice 05.
+`lib/tmdb.ts` was added in slice 03 (see ADR-9); `lib/firebase.ts` in slice 05 (see ADR-10).
 The compiled app is deployed to Firebase Hosting in slice 08 — see ADR-8.
 
 ## Stack
@@ -164,6 +164,23 @@ public/            Static files served as-is (favicon)
 - **Cost / rejected:** no data-fetching library (TanStack Query, SWR). Six GET requests on one
   page do not justify a dependency; if later slices add mutations, pagination or background
   refresh, TanStack Query is the upgrade path and `useAsync` is the only thing it replaces.
+
+## ADR-10: Auth state and route protection
+
+- **Decision:** `src/lib/firebase.ts` is the only module importing the Firebase SDK and exposes
+  `signUp` / `signIn` / `logOut` / `subscribeToAuth`. `features/auth` holds an `AuthProvider`
+  (context fed by `onAuthStateChanged`) and two layout-route guards, `RequireAuth` and
+  `RedirectIfAuthed`, which `App` wraps around the protected and login routes. Added in slice 05.
+- **Why guards over an effect:** the tutorial navigates from an `onAuthStateChanged` effect, which
+  renders the wrong page first and then jumps. A guard decides before rendering, shows a blank
+  screen while Firebase restores the session, and remembers the requested URL for after sign-in.
+- **Why no Firestore:** the tutorial stores each user's name in a Firestore `users` collection.
+  The Auth profile's `displayName` holds the same data with no database or security rules, so
+  the PRD's "auth only" scope holds.
+- **Cost:** Firebase Auth adds about 32 KB gzipped to the JS bundle (87 KB → 120 KB). Everything
+  ships in one chunk today; route-level code splitting is an option in slice 07/08 if load time
+  matters. The shared navbar imports `logOut` from `lib/`, not from the auth feature, to respect
+  ADR-2.
 
 ## Conventions
 
