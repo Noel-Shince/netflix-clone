@@ -68,6 +68,15 @@
     linear-gradient(90deg, rgba(0, 0, 0, 0.7) 0%, transparent 60%);
 }
 
+/* Transparent; catches a click on the backdrop/trailer (including the
+   trailer iframe, whose own clicks never bubble out to this page). Sits
+   between the backdrop and the caption in source order so the caption's
+   buttons and links still take any click landing on them first. */
+.hero__play-overlay {
+  position: absolute;
+  inset: 0;
+}
+
 .hero__caption {
   position: relative;
   max-width: min(600px, 100%);

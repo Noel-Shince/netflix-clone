@@ -17,10 +17,16 @@
  * The backdrop image stays underneath as the immediate, decoration-only
  * fallback while the trailer is still fetching, erroring, or simply has
  * none for that title.
+ *
+ * Clicking the backdrop (not just the Play button) opens the player too,
+ * resuming from however much of the muted trailer has played since it
+ * started — a transparent link laid over the backdrop, under the caption's
+ * own buttons, catches that click (the trailer itself is an <iframe>, whose
+ * clicks never bubble to this component's own handlers).
  */
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { InfoIcon, PlayIcon } from '../../../../components/icons/Icons.tsx';
 import { MyListButton } from '../../../../components/MyListButton/MyListButton.tsx';
 import { placeholderGradient } from '../../../../lib/placeholderArt.ts';
@@ -77,6 +83,27 @@ export function Hero({ result, onRetry, children }: HeroProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- re-fetch only when the title itself changes, not on every render of the same title.
   }, [title?.id, title?.mediaType]);
 
+  const navigate = useNavigate();
+  // When this title's trailer started autoplaying, so a click can resume the
+  // full player from roughly how far the muted preview has gotten — see the
+  // matching note in HoverCard, which this mirrors.
+  const trailerStartedAtRef = useRef<number | null>(null);
+  useEffect(() => {
+    trailerStartedAtRef.current = trailerKey ? Date.now() : null;
+  }, [trailerKey]);
+
+  const goToPlayer = (event: React.MouseEvent) => {
+    if (!title) return;
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    event.preventDefault();
+    const resumeSeconds = trailerStartedAtRef.current
+      ? Math.max(0, Math.floor((Date.now() - trailerStartedAtRef.current) / 1000))
+      : 0;
+    navigate(playerPath(title.id, title.mediaType, resumeSeconds));
+  };
+
   return (
     <section
       className="hero"
@@ -97,6 +124,19 @@ export function Hero({ result, onRetry, children }: HeroProps) {
             />
           )}
         </div>
+
+        {/* Below the caption in paint order (next sibling, same stacking
+            context, no z-index), so the caption's own buttons still get
+            first claim on their own area; this only catches the rest of
+            the banner, including clicks on the trailer iframe itself. */}
+        {title && (
+          <Link
+            className="hero__play-overlay"
+            to={playerPath(title.id, title.mediaType)}
+            onClick={goToPlayer}
+            aria-label={`Play ${title.name}`}
+          />
+        )}
 
         <div className="hero__caption">
           {result.status === 'loading' && (
@@ -132,6 +172,7 @@ export function Hero({ result, onRetry, children }: HeroProps) {
                 <Link
                   className="hero__button hero__button--play"
                   to={playerPath(title.id, title.mediaType)}
+                  onClick={goToPlayer}
                 >
                   <PlayIcon /> Play
                 </Link>
@@ -147,6 +188,7 @@ export function Hero({ result, onRetry, children }: HeroProps) {
                 <Link
                   className="hero__button hero__button--info"
                   to={playerPath(title.id, title.mediaType)}
+                  onClick={goToPlayer}
                 >
                   <InfoIcon /> More Info
                 </Link>

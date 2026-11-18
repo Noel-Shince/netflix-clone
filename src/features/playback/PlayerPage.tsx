@@ -10,13 +10,14 @@
  * This" row under the details (slice 09).
  */
 import { useEffect, useMemo } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { ArrowLeftIcon } from '../../components/icons/Icons.tsx';
 import { MyListButton } from '../../components/MyListButton/MyListButton.tsx';
 import { NotFoundPage } from '../../components/NotFound/NotFoundPage.tsx';
 import { TitleRow } from '../../components/TitleRow/TitleRow.tsx';
 import type { MediaType } from '../../lib/media.ts';
 import { placeholderGradient } from '../../lib/placeholderArt.ts';
+import { RESUME_PARAM } from '../../lib/routes.ts';
 import { tmdbErrorMessage } from '../../lib/tmdb.ts';
 import { fetchRelatedTitles } from '../../lib/recommendations.ts';
 import { useAsync } from '../../lib/useAsync.ts';
@@ -30,12 +31,31 @@ const APP_TITLE = 'Noelflix';
 /** `/player/:id` is a movie, `/player/tv/:id` a TV show (see lib/routes.ts). */
 export function PlayerPage({ mediaType = 'movie' }: { mediaType?: MediaType }) {
   const { id = '' } = useParams();
+  const [searchParams] = useSearchParams();
   // Only plain positive integers are TMDB ids; anything else never hits the API.
   if (!/^[1-9]\d*$/.test(id)) return <NotFoundPage />;
-  return <PlayerScreen key={`${mediaType}-${id}`} id={Number(id)} mediaType={mediaType} />;
+  // Set by the hover preview / hero banner (lib/routes.ts playerPath) when the
+  // trailer already played a bit before the title was opened from there.
+  const resumeSeconds = Number(searchParams.get(RESUME_PARAM));
+  return (
+    <PlayerScreen
+      key={`${mediaType}-${id}`}
+      id={Number(id)}
+      mediaType={mediaType}
+      resumeSeconds={Number.isFinite(resumeSeconds) && resumeSeconds > 0 ? resumeSeconds : 0}
+    />
+  );
 }
 
-function PlayerScreen({ id, mediaType }: { id: number; mediaType: MediaType }) {
+function PlayerScreen({
+  id,
+  mediaType,
+  resumeSeconds,
+}: {
+  id: number;
+  mediaType: MediaType;
+  resumeSeconds: number;
+}) {
   const load = useMemo(() => () => fetchPlayableTitle(id, mediaType), [id, mediaType]);
   const { result, retry } = useAsync(load);
   const title = result.status === 'success' ? result.data : null;
@@ -63,7 +83,7 @@ function PlayerScreen({ id, mediaType }: { id: number; mediaType: MediaType }) {
       {result.status === 'error' && (
         <ErrorState notFound={isNotFound(result.error)} error={result.error} onRetry={retry} />
       )}
-      {title && <TitleState title={title} />}
+      {title && <TitleState title={title} resumeSeconds={resumeSeconds} />}
       {title?.mediaType === 'movie' && <MoreLikeThis id={title.id} />}
     </main>
   );
@@ -89,7 +109,7 @@ function BackButton() {
   );
 }
 
-function TitleState({ title }: { title: PlayableTitle }) {
+function TitleState({ title, resumeSeconds }: { title: PlayableTitle; resumeSeconds: number }) {
   const { trailer } = title;
 
   return (
@@ -99,9 +119,10 @@ function TitleState({ title }: { title: PlayableTitle }) {
           <iframe
             className="player__frame"
             // Privacy-enhanced embed: no YouTube cookies until the viewer plays.
+            // `start` seeks to where a hover preview or hero banner left off.
             src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(
               trailer.youtubeKey,
-            )}?autoplay=1&rel=0`}
+            )}?autoplay=1&rel=0${resumeSeconds > 0 ? `&start=${resumeSeconds}` : ''}`}
             title={`${title.name}: ${trailer.name}`}
             allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
             allowFullScreen
