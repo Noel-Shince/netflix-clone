@@ -76,6 +76,14 @@ export function subscribeToAuth(listener: (user: AuthUser | null) => void): () =
   return onAuthStateChanged(auth, listener);
 }
 
+/**
+ * The signed-in user's id, or null. Safe to call synchronously on pages behind
+ * `RequireAuth`, which only render once Firebase has restored the session.
+ */
+export function currentUserId(): string | null {
+  return auth.currentUser?.uid ?? null;
+}
+
 /** The Firebase error code (e.g. "auth/invalid-credential"), or null for non-Firebase errors. */
 export function firebaseErrorCode(error: unknown): string | null {
   return error instanceof FirebaseError ? error.code : null;
