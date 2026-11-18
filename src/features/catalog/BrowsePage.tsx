@@ -7,11 +7,13 @@
  */
 import { Footer } from '../../components/Footer/Footer.tsx';
 import { Navbar } from '../../components/Navbar/Navbar.tsx';
+import { useState } from 'react';
+import { TitleRow } from '../../components/TitleRow/TitleRow.tsx';
 import { useAsync } from '../../lib/useAsync.ts';
+import { getWatchHistory, type WatchedTitle } from '../../lib/watchHistory.ts';
 import type { RowConfig } from './browsePages.ts';
 import type { FeaturedTitle } from './types.ts';
 import { Hero } from './components/Hero/Hero.tsx';
-import { TitleRow } from './components/TitleRow/TitleRow.tsx';
 import './HomePage.css';
 
 export interface BrowsePageConfig {
@@ -20,6 +22,8 @@ export interface BrowsePageConfig {
   /** Row shown overlapping the bottom of the hero. */
   heroRow: RowConfig;
   rows: RowConfig[];
+  /** Rows from the user's watch history, shown above `rows` (home page only). */
+  personalRows?: (history: WatchedTitle[]) => RowConfig[];
 }
 
 export function CatalogRow({ config }: { config: RowConfig }) {
@@ -29,6 +33,11 @@ export function CatalogRow({ config }: { config: RowConfig }) {
 
 export function BrowsePage({ config }: { config: BrowsePageConfig }) {
   const featured = useAsync(config.loadFeatured);
+  // Built once per visit, so the personal rows' loaders stay stable for useAsync.
+  const [rows] = useState(() => [
+    ...(config.personalRows?.(getWatchHistory()) ?? []),
+    ...config.rows,
+  ]);
 
   return (
     <>
@@ -38,7 +47,7 @@ export function BrowsePage({ config }: { config: BrowsePageConfig }) {
           <CatalogRow config={config.heroRow} />
         </Hero>
         <div className="home__rows">
-          {config.rows.map((row) => (
+          {rows.map((row) => (
             <CatalogRow key={row.id} config={row} />
           ))}
         </div>

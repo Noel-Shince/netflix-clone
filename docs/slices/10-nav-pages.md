@@ -1,4 +1,4 @@
-# 09 — Working nav: browse pages, My List, languages, notifications
+# 10 — Working nav: browse pages, My List, languages, notifications
 
 **Goal:** every item in the top nav does something. A signed-in user can browse TV shows, movies
 and what's new, save titles to My List, browse by original language, and open a notifications
@@ -11,7 +11,7 @@ menu.
 - [x] TV shows play: cards link to `/player/tv/:id`, which loads `/tv/{id}` details and trailer.
       Movie URLs (`/player/:id`) are unchanged.
 - [x] **My List** (`/my-list`): "+ My List" on the hero, the player page and every card (hover on
-      desktop, always visible on touch) saves to Firestore; the page shows a live grid, newest first,
+      desktop, always visible on touch) saves to Firestore (Lite SDK, see ADR-11); the page shows a grid, newest first,
       with Remove buttons and an empty state.
 - [x] **Browse by Languages** (`/languages?lang=ko`): picker of 12 original languages; four rows
       (popular / top-rated movies and TV) from TMDB `discover`. The choice is in the URL.
@@ -27,7 +27,7 @@ menu.
 ## Out of scope for this slice
 
 - **Search** (separate thread), **profiles** (separate thread; My List moves under the active profile
-  once both merge, see Notes), recommendations, and "Continue Watching" (needs watch history).
+  once both merge, see Notes), and "Continue Watching" (needs watch history).
 - A real "More Info" modal: More Info opens the player page, which holds the title details.
 - Muted autoplay trailer in the hero, Teleparty, Games, Top 10 / "New Episode" badges.
 - Real push notifications: there is no backend (ADR-5).

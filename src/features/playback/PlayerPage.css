@@ -190,3 +190,9 @@
     width: min(100% - 128px, (100dvh - 32px) * 16 / 9);
   }
 }
+
+/* "More Like This" (slice 09): the row brings its own page gutter, so cancel
+   the player's padding to line it up with the home page rows. */
+.player__more {
+  margin-inline: calc(-1 * var(--page-gutter));
+}

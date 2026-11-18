@@ -2,7 +2,7 @@
  * Top navigation bar shared by logged-in pages.
  *
  * Transparent over the hero, solid once the page scrolls. Every link routes to
- * a browse page (slice 09); below 900px they collapse into a "Browse" menu.
+ * a browse page (slice 10); below 1100px they collapse into a "Browse" menu.
  * The bell opens NotificationsMenu.
  *
  * The account menu opens on click / tap (and on hover with a mouse), so it

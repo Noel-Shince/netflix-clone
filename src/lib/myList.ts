@@ -6,20 +6,23 @@
  * from outside (`setMyListOwner`, called by App) rather than built here, so
  * scoping the list to a profile instead of an account is a one-line change.
  *
- * One Firestore listener is shared by every component that reads the list
- * (hero button, player button, My List page) through a tiny external store,
- * so toggling a title anywhere updates it everywhere without extra reads.
+ * Uses Firestore Lite (no live listeners, about 110 KB gzipped smaller than
+ * the full SDK). The list is read once per owner into a tiny external store
+ * shared by every reader (hero button, card buttons, player, My List page);
+ * each add / remove updates that store after its write succeeds, so toggling
+ * a title anywhere updates it everywhere without re-reading. Changes made on
+ * another device show up on the next page load.
  */
 import {
   collection,
   deleteDoc,
   doc,
-  onSnapshot,
+  getDocs,
   orderBy,
   query,
   serverTimestamp,
   setDoc,
-} from 'firebase/firestore';
+} from 'firebase/firestore/lite';
 import { useSyncExternalStore } from 'react';
 import { db } from './firebase.ts';
 import type { MediaType, TitleRef } from './media.ts';
@@ -33,7 +36,8 @@ const LOADING: MyListState = { status: 'loading' };
 
 let ownerPath: string | null = null;
 let state: MyListState = LOADING;
-let stopListening: (() => void) | null = null;
+/** Bumped on every owner change, so a slow read for a previous owner is dropped. */
+let generation = 0;
 const listeners = new Set<() => void>();
 
 function emit(next: MyListState) {
@@ -49,36 +53,31 @@ function isMediaType(value: unknown): value is MediaType {
   return value === 'movie' || value === 'tv';
 }
 
-/** Starts the Firestore listener for the current owner, if anyone is reading. */
-function startListening() {
-  stopListening?.();
-  stopListening = null;
-  if (!ownerPath || listeners.size === 0) return;
-
-  const listQuery = query(collection(db, ownerPath, 'myList'), orderBy('addedAt', 'desc'));
-  stopListening = onSnapshot(
-    listQuery,
-    // Pending local writes have a null server timestamp until confirmed;
-    // 'estimate' keeps a just-added title at the top instead of the bottom.
-    (snapshot) => {
-      const items: TitleRef[] = [];
-      for (const entry of snapshot.docs) {
-        const data = entry.data({ serverTimestamps: 'estimate' });
-        if (typeof data.id !== 'number' || !isMediaType(data.mediaType)) continue;
-        items.push({
-          id: data.id,
-          mediaType: data.mediaType,
-          name: typeof data.name === 'string' ? data.name : '',
-          imageUrl: typeof data.imageUrl === 'string' ? data.imageUrl : null,
-        });
-      }
-      emit({ status: 'ready', items });
-    },
-    (error) => {
-      console.error('My List failed to load', error);
-      emit({ status: 'error', error });
-    },
-  );
+async function load() {
+  const current = ++generation;
+  if (!ownerPath) return;
+  try {
+    const snapshot = await getDocs(
+      query(collection(db, ownerPath, 'myList'), orderBy('addedAt', 'desc')),
+    );
+    const items: TitleRef[] = [];
+    for (const entry of snapshot.docs) {
+      const data = entry.data();
+      if (typeof data.id !== 'number' || !isMediaType(data.mediaType)) continue;
+      items.push({
+        id: data.id,
+        mediaType: data.mediaType,
+        name: typeof data.name === 'string' ? data.name : '',
+        imageUrl: typeof data.imageUrl === 'string' ? data.imageUrl : null,
+      });
+    }
+    if (current === generation) emit({ status: 'ready', items });
+  } catch (error) {
+    console.error('My List failed to load', error);
+    if (current === generation) {
+      emit({ status: 'error', error: error instanceof Error ? error : new Error(String(error)) });
+    }
+  }
 }
 
 /**
@@ -89,28 +88,19 @@ export function setMyListOwner(path: string | null) {
   if (path === ownerPath) return;
   ownerPath = path;
   emit(LOADING);
-  startListening();
+  void load();
 }
 
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
-  if (listeners.size === 1) startListening();
-  return () => {
-    listeners.delete(listener);
-    if (listeners.size === 0) {
-      stopListening?.();
-      stopListening = null;
-      // The next reader re-reads from Firestore's cache, so don't show stale data meanwhile.
-      state = LOADING;
-    }
-  };
+  return () => listeners.delete(listener);
 }
 
 function getSnapshot(): MyListState {
   return state;
 }
 
-/** The signed-in viewer's list, live. */
+/** The signed-in viewer's list, kept current with this tab's changes. */
 export function useMyList(): MyListState {
   return useSyncExternalStore(subscribe, getSnapshot);
 }
@@ -127,7 +117,12 @@ function titleDoc(title: Pick<TitleRef, 'id' | 'mediaType'>) {
   return doc(db, ownerPath, 'myList', titleKey(title));
 }
 
+function withoutTitle(items: TitleRef[], title: Pick<TitleRef, 'id' | 'mediaType'>) {
+  return items.filter((item) => titleKey(item) !== titleKey(title));
+}
+
 export async function addToMyList(title: TitleRef): Promise<void> {
+  const owner = ownerPath;
   await setDoc(titleDoc(title), {
     id: title.id,
     mediaType: title.mediaType,
@@ -135,8 +130,15 @@ export async function addToMyList(title: TitleRef): Promise<void> {
     imageUrl: title.imageUrl,
     addedAt: serverTimestamp(),
   });
+  if (owner === ownerPath && state.status === 'ready') {
+    emit({ status: 'ready', items: [title, ...withoutTitle(state.items, title)] });
+  }
 }
 
 export async function removeFromMyList(title: Pick<TitleRef, 'id' | 'mediaType'>): Promise<void> {
+  const owner = ownerPath;
   await deleteDoc(titleDoc(title));
+  if (owner === ownerPath && state.status === 'ready') {
+    emit({ status: 'ready', items: withoutTitle(state.items, title) });
+  }
 }

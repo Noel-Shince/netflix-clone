@@ -5,16 +5,22 @@
  * TMDB has no actual movie files, so the trailer stands in for playback (PRD
  * §4). When a title has no YouTube video, the stage shows its artwork and a
  * "No trailer available" message instead of an empty player.
+ *
+ * Opening a title records it in the watch history and shows a "More Like
+ * This" row under the details (slice 09).
  */
 import { useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ArrowLeftIcon } from '../../components/icons/Icons.tsx';
 import { MyListButton } from '../../components/MyListButton/MyListButton.tsx';
 import { NotFoundPage } from '../../components/NotFound/NotFoundPage.tsx';
+import { TitleRow } from '../../components/TitleRow/TitleRow.tsx';
 import type { MediaType } from '../../lib/media.ts';
 import { placeholderGradient } from '../../lib/placeholderArt.ts';
 import { tmdbErrorMessage } from '../../lib/tmdb.ts';
+import { fetchRelatedTitles } from '../../lib/recommendations.ts';
 import { useAsync } from '../../lib/useAsync.ts';
+import { recordWatch } from '../../lib/watchHistory.ts';
 import { fetchPlayableTitle, isNotFound } from './api/playbackApi.ts';
 import type { PlayableTitle } from './types.ts';
 import './PlayerPage.css';
@@ -34,8 +40,15 @@ function PlayerScreen({ id, mediaType }: { id: number; mediaType: MediaType }) {
   const { result, retry } = useAsync(load);
   const title = result.status === 'success' ? result.data : null;
 
+  // A "More Like This" card swaps the id without leaving the page.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   useEffect(() => {
     if (!title) return;
+    // Watch history and recommendations are movie-only (TMDB ids are per type).
+    if (title.mediaType === 'movie') recordWatch({ id: title.id, name: title.name });
     document.title = `${title.name} | ${APP_TITLE}`;
     return () => {
       document.title = APP_TITLE;
@@ -51,6 +64,7 @@ function PlayerScreen({ id, mediaType }: { id: number; mediaType: MediaType }) {
         <ErrorState notFound={isNotFound(result.error)} error={result.error} onRetry={retry} />
       )}
       {title && <TitleState title={title} />}
+      {title?.mediaType === 'movie' && <MoreLikeThis id={title.id} />}
     </main>
   );
 }
@@ -136,6 +150,18 @@ function TitleState({ title }: { title: PlayableTitle }) {
         {title.synopsis && <p className="player__synopsis">{title.synopsis}</p>}
       </section>
     </>
+  );
+}
+
+/** Related titles. Hidden when TMDB has none, rather than showing an empty row. */
+function MoreLikeThis({ id }: { id: number }) {
+  const load = useMemo(() => () => fetchRelatedTitles(id), [id]);
+  const { result, retry } = useAsync(load);
+  if (result.status === 'success' && result.data.length === 0) return null;
+  return (
+    <div className="player__more">
+      <TitleRow id="more-like-this" heading="More Like This" result={result} onRetry={retry} />
+    </div>
   );
 }
 

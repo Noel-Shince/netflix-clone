@@ -1,5 +1,6 @@
 /**
- * One horizontally scrolling row of title cards.
+ * One horizontally scrolling row of title cards. Shared by the home page and
+ * the player's "More Like This" row, so it lives in components/.
  *
  * Renders all three states of its row's request: skeleton cards while
  * loading, a message with Retry on failure, and the cards once loaded. Each
@@ -15,18 +16,24 @@
  */
 import { useRef } from 'react';
 import { Link } from 'react-router';
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  PlayIcon,
-} from '../../../../components/icons/Icons.tsx';
-import { MyListButton } from '../../../../components/MyListButton/MyListButton.tsx';
-import { placeholderGradient } from '../../../../lib/placeholderArt.ts';
-import { playerPath } from '../../../../lib/routes.ts';
-import { tmdbErrorMessage } from '../../../../lib/tmdb.ts';
-import type { AsyncResult } from '../../../../lib/useAsync.ts';
-import type { CatalogTitle } from '../../types.ts';
+import { ChevronLeftIcon, ChevronRightIcon, PlayIcon } from '../icons/Icons.tsx';
+import { MyListButton } from '../MyListButton/MyListButton.tsx';
+import type { MediaType } from '../../lib/media.ts';
+import { placeholderGradient } from '../../lib/placeholderArt.ts';
+import { playerPath } from '../../lib/routes.ts';
+import { tmdbErrorMessage } from '../../lib/tmdb.ts';
+import type { AsyncResult } from '../../lib/useAsync.ts';
 import './TitleRow.css';
+
+/** What a card needs. Features map their own data onto this shape. */
+export interface RowTitle {
+  id: number;
+  name: string;
+  /** Full image URL, or null when there is no artwork (card shows a placeholder). */
+  imageUrl: string | null;
+  /** Defaults to 'movie' (recommendation rows are movie-only). */
+  mediaType?: MediaType;
+}
 
 const SKELETON_CARDS = 8;
 
@@ -34,7 +41,7 @@ interface TitleRowProps {
   /** Stable key, used for the heading id. */
   id: string;
   heading: string;
-  result: AsyncResult<CatalogTitle[]>;
+  result: AsyncResult<RowTitle[]>;
   onRetry: () => void;
 }
 
@@ -94,41 +101,43 @@ export function TitleRow({ id, heading, result, onRetry }: TitleRowProps) {
           </button>
 
           <ul ref={scrollerRef} className="title-row__list">
-            {result.data.map((title) => (
-              <li key={`${title.mediaType}-${title.id}`} className="title-row__card">
-                <Link className="title-row__link" to={playerPath(title.id, title.mediaType)}>
-                  {title.imageUrl ? (
-                    // Empty alt: the title name is printed right below the image.
-                    <img
-                      className="title-row__art"
-                      src={title.imageUrl}
-                      alt=""
-                      width={300}
-                      height={169}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <div
-                      className="title-row__art"
-                      style={{ backgroundImage: placeholderGradient(title.id) }}
-                    />
-                  )}
-                  <p className="title-row__name">{title.name}</p>
-                </Link>
-                <div className="title-row__actions">
-                  <Link
-                    className="title-row__action title-row__action--play"
-                    to={playerPath(title.id, title.mediaType)}
-                    aria-label={`Play ${title.name}`}
-                    tabIndex={-1}
-                  >
-                    <PlayIcon />
+            {result.data
+              .map(({ mediaType = 'movie', ...rest }) => ({ ...rest, mediaType }))
+              .map((title) => (
+                <li key={`${title.mediaType}-${title.id}`} className="title-row__card">
+                  <Link className="title-row__link" to={playerPath(title.id, title.mediaType)}>
+                    {title.imageUrl ? (
+                      // Empty alt: the title name is printed right below the image.
+                      <img
+                        className="title-row__art"
+                        src={title.imageUrl}
+                        alt=""
+                        width={300}
+                        height={169}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div
+                        className="title-row__art"
+                        style={{ backgroundImage: placeholderGradient(title.id) }}
+                      />
+                    )}
+                    <p className="title-row__name">{title.name}</p>
                   </Link>
-                  <MyListButton className="title-row__action" title={title} iconOnly />
-                </div>
-              </li>
-            ))}
+                  <div className="title-row__actions">
+                    <Link
+                      className="title-row__action title-row__action--play"
+                      to={playerPath(title.id, title.mediaType)}
+                      aria-label={`Play ${title.name}`}
+                      tabIndex={-1}
+                    >
+                      <PlayIcon />
+                    </Link>
+                    <MyListButton className="title-row__action" title={title} iconOnly />
+                  </div>
+                </li>
+              ))}
           </ul>
 
           <button

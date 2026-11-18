@@ -5,14 +5,16 @@
  * (useAsync refetches when the loader changes) and TMDB responses are shared
  * through lib/tmdb's cache when two pages show the same list.
  */
-import type { CatalogTitle } from './types.ts';
+import { fetchPicksFor, fetchRelatedTitles } from '../../lib/recommendations.ts';
+import type { WatchedTitle } from '../../lib/watchHistory.ts';
+import type { RowTitle } from '../../components/TitleRow/TitleRow.tsx';
 import type { BrowsePageConfig } from './BrowsePage.tsx';
 import { fetchFeaturedTitle, fetchTitleRow, type TitleSource } from './api/catalogApi.ts';
 
 export interface RowConfig {
   id: string;
   heading: string;
-  load: () => Promise<CatalogTitle[]>;
+  load: () => Promise<RowTitle[]>;
 }
 
 export function row(id: string, heading: string, source: TitleSource): RowConfig {
@@ -35,14 +37,39 @@ function featured(source: TitleSource) {
   return () => fetchFeaturedTitle(source);
 }
 
+/**
+ * Home rows built from the user's watch history, newest watch first (the
+ * recommendations slice). Empty with no history: there is nothing honest to
+ * personalise on.
+ */
+function personalRows(history: WatchedTitle[]): RowConfig[] {
+  if (history.length === 0) return [];
+  const watchedIds = history.map((t) => t.id);
+  const rows: RowConfig[] = [
+    { id: 'top-picks', heading: 'Top Picks for You', load: () => fetchPicksFor(watchedIds) },
+  ];
+  // With a single watched title, this row would repeat Top Picks exactly.
+  if (history.length > 1) {
+    const latest = history[0];
+    const watched = new Set(watchedIds);
+    rows.push({
+      id: 'because-you-watched',
+      heading: `Because you watched ${latest.name}`,
+      load: async () => (await fetchRelatedTitles(latest.id)).filter((t) => !watched.has(t.id)),
+    });
+  }
+  return rows;
+}
+
 export const HOME_PAGE: BrowsePageConfig = {
   loadFeatured: featured(movie('/trending/movie/day')),
+  personalRows,
   heroRow: row('popular', 'Popular on Noelflix', movie('/movie/popular')),
   rows: [
     row('top-rated', 'Blockbuster Movies', movie('/movie/top_rated')),
     row('now-playing', 'Now Playing', movie('/movie/now_playing')),
     row('upcoming', 'Upcoming', movie('/movie/upcoming')),
-    row('trending-week', 'Top Picks for You', movie('/trending/movie/week')),
+    row('trending-week', 'Trending This Week', movie('/trending/movie/week')),
   ],
 };
 
