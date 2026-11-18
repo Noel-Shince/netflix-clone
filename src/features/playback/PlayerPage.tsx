@@ -6,8 +6,12 @@
  * §4). When a title has no YouTube video, the stage shows its artwork and a
  * "No trailer available" message instead of an empty player.
  *
- * Opening a title records it in the watch history and shows a "More Like
- * This" row under the details (slice 09).
+ * Opening a title shows a "More Like This" row under the details (slice 09,
+ * extended to TV in slice 17 — a movie or TV title both get recommendations,
+ * since TMDB's own recommendations/similar endpoints exist for both). Only
+ * the watch history behind the *home page's* personalised rows stays
+ * movie-only (see watchHistory.ts): that is a separate, bigger feature this
+ * slice doesn't touch.
  */
 import { useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
@@ -67,7 +71,8 @@ function PlayerScreen({
 
   useEffect(() => {
     if (!title) return;
-    // Watch history and recommendations are movie-only (TMDB ids are per type).
+    // Watch history (home page personalisation only, not this page's own
+    // "More Like This") stays movie-only — see recommendations.ts.
     if (title.mediaType === 'movie') recordWatch({ id: title.id, name: title.name });
     document.title = `${title.name} | ${APP_TITLE}`;
     return () => {
@@ -84,7 +89,7 @@ function PlayerScreen({
         <ErrorState notFound={isNotFound(result.error)} error={result.error} onRetry={retry} />
       )}
       {title && <TitleState title={title} resumeSeconds={resumeSeconds} />}
-      {title?.mediaType === 'movie' && <MoreLikeThis id={title.id} />}
+      {title && <MoreLikeThis id={title.id} mediaType={title.mediaType} />}
     </main>
   );
 }
@@ -174,9 +179,9 @@ function TitleState({ title, resumeSeconds }: { title: PlayableTitle; resumeSeco
   );
 }
 
-/** Related titles. Hidden when TMDB has none, rather than showing an empty row. */
-function MoreLikeThis({ id }: { id: number }) {
-  const load = useMemo(() => () => fetchRelatedTitles(id), [id]);
+/** Related titles (movies or TV). Hidden when TMDB has none, rather than showing an empty row. */
+function MoreLikeThis({ id, mediaType }: { id: number; mediaType: MediaType }) {
+  const load = useMemo(() => () => fetchRelatedTitles(id, mediaType), [id, mediaType]);
   const { result, retry } = useAsync(load);
   if (result.status === 'success' && result.data.length === 0) return null;
   return (
