@@ -1,5 +1,6 @@
 /**
- * Home / browse page: navbar, hero with an overlapping row, more rows, footer.
+ * Home / browse page: hero with an overlapping row, then more rows. The
+ * navbar and footer come from BrowseLayout.
  *
  * The only place that knows which TMDB list feeds which row. Each section
  * fetches on its own, so rows appear as they arrive and fail independently.
@@ -7,8 +8,6 @@
  * The personal rows (slice 09) only appear once the user has opened at least
  * one title: with no watch history there is nothing honest to personalise on.
  */
-import { Footer } from '../../components/Footer/Footer.tsx';
-import { Navbar } from '../../components/Navbar/Navbar.tsx';
 import { useState } from 'react';
 import { fetchPicksFor, fetchRelatedTitles } from '../../lib/recommendations.ts';
 import { useAsync } from '../../lib/useAsync.ts';
@@ -72,19 +71,15 @@ export function HomePage() {
   const [rows] = useState(() => [...personalRows(getWatchHistory()), ...ROWS]);
 
   return (
-    <>
-      <Navbar />
-      <main className="home">
-        <Hero result={featured.result} onRetry={featured.retry}>
-          <CatalogRow config={HERO_ROW} />
-        </Hero>
-        <div className="home__rows">
-          {rows.map((config) => (
-            <CatalogRow key={config.id} config={config} />
-          ))}
-        </div>
-      </main>
-      <Footer />
-    </>
+    <main className="home">
+      <Hero result={featured.result} onRetry={featured.retry}>
+        <CatalogRow config={HERO_ROW} />
+      </Hero>
+      <div className="home__rows">
+        {rows.map((config) => (
+          <CatalogRow key={config.id} config={config} />
+        ))}
+      </div>
+    </main>
   );
 }
