@@ -203,7 +203,7 @@ public/            Static files served as-is (favicon)
   calls: it reads the list once per owner into a small store behind `useSyncExternalStore`, and
   each add / remove updates that store after its write succeeds, so every "+ My List" button and
   the My List page stay in sync. `firestore.rules` allows only the owner and validates each
-  document's fields. Added in slice 10.
+  document's fields. Added in slice 11.
 - **Why Firestore over localStorage:** the list should follow the account to another device. This
   supersedes ADR-10's "no Firestore" note, which was scoped to auth only.
 - **Why Firestore Lite:** the full SDK grows the bundle from about 120 KB to 263 KB gzipped; Lite

@@ -7,9 +7,7 @@
  */
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { Footer } from '../../components/Footer/Footer.tsx';
 import { XIcon } from '../../components/icons/Icons.tsx';
-import { Navbar } from '../../components/Navbar/Navbar.tsx';
 import type { TitleRef } from '../../lib/media.ts';
 import { removeFromMyList, useMyList } from '../../lib/myList.ts';
 import { placeholderGradient } from '../../lib/placeholderArt.ts';
@@ -21,7 +19,6 @@ export function MyListPage() {
 
   return (
     <>
-      <Navbar />
       <main className="my-list" aria-busy={list.status === 'loading'}>
         <h1 className="my-list__heading">My List</h1>
 
@@ -58,7 +55,6 @@ export function MyListPage() {
           </ul>
         )}
       </main>
-      <Footer />
     </>
   );
 }

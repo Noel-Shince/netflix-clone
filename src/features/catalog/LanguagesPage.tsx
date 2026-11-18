@@ -8,8 +8,6 @@
  */
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router';
-import { Footer } from '../../components/Footer/Footer.tsx';
-import { Navbar } from '../../components/Navbar/Navbar.tsx';
 import { CatalogRow } from './BrowsePage.tsx';
 import { row } from './browsePages.ts';
 import './LanguagesPage.css';
@@ -71,7 +69,6 @@ export function LanguagesPage() {
 
   return (
     <>
-      <Navbar />
       <main className="languages">
         <div className="languages__header">
           <h1 className="languages__heading">Browse by Languages</h1>
@@ -94,7 +91,6 @@ export function LanguagesPage() {
           <CatalogRow key={`${language.code}-${config.id}`} config={config} />
         ))}
       </main>
-      <Footer />
     </>
   );
 }

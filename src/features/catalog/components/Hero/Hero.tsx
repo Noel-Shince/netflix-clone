@@ -1,11 +1,11 @@
 /**
  * Banner for one featured title, drawn as an inset card with rounded corners
- * (Netflix's current web layout, slice 10), with an optional row of titles
+ * (Netflix's current web layout, slice 11), with an optional row of titles
  * right below it.
  *
  * Renders all three states of the featured-title request: a skeleton while
  * loading, a message with Retry on failure, and the title once loaded.
- * Play opens the player (slice 04). My List saves the title (slice 10); More
+ * Play opens the player (slice 04). My List saves the title (slice 11); More
  * Info opens the same page as Play, whose details section is the only title
  * detail view the app has.
  */

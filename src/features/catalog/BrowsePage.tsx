@@ -1,12 +1,10 @@
 /**
- * Browse page layout: navbar, hero with an overlapping row, more rows, footer.
+ * Browse page layout: hero, then rows. Navbar and footer come from BrowseLayout.
  *
  * Home, TV Shows, Movies and New & Popular are all this layout with different
  * TMDB sources (see browsePages.ts). Each section fetches on its own, so rows
  * appear as they arrive and fail independently.
  */
-import { Footer } from '../../components/Footer/Footer.tsx';
-import { Navbar } from '../../components/Navbar/Navbar.tsx';
 import { useState } from 'react';
 import { TitleRow } from '../../components/TitleRow/TitleRow.tsx';
 import { useAsync } from '../../lib/useAsync.ts';
@@ -41,7 +39,6 @@ export function BrowsePage({ config }: { config: BrowsePageConfig }) {
 
   return (
     <>
-      <Navbar />
       <main className="home">
         <Hero result={featured.result} onRetry={featured.retry}>
           <CatalogRow config={config.heroRow} />
@@ -52,7 +49,6 @@ export function BrowsePage({ config }: { config: BrowsePageConfig }) {
           ))}
         </div>
       </main>
-      <Footer />
     </>
   );
 }

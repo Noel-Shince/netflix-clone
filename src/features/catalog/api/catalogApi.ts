@@ -75,3 +75,33 @@ export async function fetchFeaturedTitle(source: TitleSource): Promise<FeaturedT
   }
   throw new Error('TMDB returned no title with artwork for the banner.');
 }
+
+/**
+ * Movies matching a free-text query, best match first.
+ *
+ * TMDB does the matching and ranking (word and prefix matches on original,
+ * translated and alternative titles). On top of that, this:
+ * - skips the request for a blank query;
+ * - excludes adult titles;
+ * - drops duplicate ids (TMDB occasionally repeats a title);
+ * - keeps TMDB's order, but moves titles with no backdrop to the end, since
+ *   those are usually obscure or incomplete entries and render as placeholders.
+ *
+ * Movies only: the player page plays movie trailers (`/movie/{id}`).
+ */
+export async function searchMovies(query: string): Promise<CatalogTitle[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  const list = await tmdbGet<TmdbList>('/search/movie', {
+    query: trimmed,
+    include_adult: 'false',
+  });
+
+  const seen = new Set<number>();
+  const unique = list.results.filter((movie) => !seen.has(movie.id) && seen.add(movie.id));
+  const hasArt = (movie: TmdbListItem) => Boolean(movie.backdrop_path);
+  return [...unique.filter(hasArt), ...unique.filter((movie) => !hasArt(movie))].map((movie) =>
+    toTitle(movie, 'movie'),
+  );
+}

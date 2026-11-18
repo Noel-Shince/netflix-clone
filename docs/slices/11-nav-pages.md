@@ -1,4 +1,4 @@
-# 10 — Working nav: browse pages, My List, languages, notifications
+# 11 — Working nav: browse pages, My List, languages, notifications
 
 **Goal:** every item in the top nav does something. A signed-in user can browse TV shows, movies
 and what's new, save titles to My List, browse by original language, and open a notifications
