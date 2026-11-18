@@ -25,3 +25,8 @@ export function requireEnv(name: EnvVarName): string {
   }
   return value;
 }
+
+/** True when an optional flag variable is set to exactly "true". */
+export function envFlag(name: EnvVarName): boolean {
+  return import.meta.env[name] === 'true';
+}

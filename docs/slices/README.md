@@ -14,6 +14,7 @@ Name: `0X-slice-name.md`, matching branch `feature/0X-slice-name` where the envi
 | 06  | [Login loading state](06-loading-animation.md) |
 | 07  | [Responsive pass](07-responsive-styling.md)    |
 | 08  | [Deploy to Firebase Hosting](08-deploy.md)     |
+| 09  | [Multiple profiles](09-profiles.md)            |
 
 Template:
 

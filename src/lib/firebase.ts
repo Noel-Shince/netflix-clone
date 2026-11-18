@@ -4,11 +4,13 @@
  * Initialises the app once from the VITE_FIREBASE_* variables (ADR-4) and
  * exposes the handful of auth operations the app needs as plain functions, so
  * components never touch `firebase/*` and swapping the provider stays a
- * one-file change. Added in slice 05.
+ * one-file change. Added in slice 05. Slice 09 adds Firestore (`db`, lite SDK,
+ * ADR-11); its queries live in modules under lib/ (e.g. profiles.ts).
  */
 import { FirebaseError, initializeApp } from 'firebase/app';
 import {
   browserLocalPersistence,
+  connectAuthEmulator,
   browserSessionPersistence,
   createUserWithEmailAndPassword,
   getAuth,
@@ -19,7 +21,8 @@ import {
   updateProfile,
   type User,
 } from 'firebase/auth';
-import { requireEnv } from './env.ts';
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore/lite';
+import { envFlag, requireEnv } from './env.ts';
 
 const app = initializeApp({
   apiKey: requireEnv('VITE_FIREBASE_API_KEY'),
@@ -31,6 +34,14 @@ const app = initializeApp({
 });
 
 const auth = getAuth(app);
+export const db = getFirestore(app);
+
+// Local development against `firebase emulators:start` (ports in firebase.json).
+// DEV-gated so a stray flag can never point a production build at localhost.
+if (import.meta.env.DEV && envFlag('VITE_USE_FIREBASE_EMULATORS')) {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+  connectFirestoreEmulator(db, '127.0.0.1', 8080);
+}
 
 export type AuthUser = User;
 
