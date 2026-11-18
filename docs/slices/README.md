@@ -15,6 +15,7 @@ Name: `0X-slice-name.md`, matching branch `feature/0X-slice-name` where the envi
 | 07  | [Responsive pass](07-responsive-styling.md)    |
 | 08  | [Deploy to Firebase Hosting](08-deploy.md)     |
 | 09  | [Movie recommendations](09-recommendations.md) |
+| 10  | [Movie search](10-movie-search.md)             |
 | 11  | [Multiple profiles](11-profiles.md)            |
 
 Template:

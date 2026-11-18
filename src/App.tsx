@@ -1,19 +1,21 @@
 /**
  * Root component: auth and profile providers, and the route table.
  *
- * `/` and `/player/:id` need a signed-in user (slice 05) and a chosen profile
- * (slice 11); the profile screens need only a signed-in user; `/login` is for
- * logged-out users only. Each rule is a layout route, so adding a protected
- * page is just nesting it in the right group.
+ * `/`, `/search` and `/player/:id` need a signed-in user (slice 05) and a
+ * chosen profile (slice 11); the profile screens need only a signed-in user;
+ * `/login` is for logged-out users only. Each rule is a layout route, so adding
+ * a protected page is just nesting it in the right group.
  */
 import { BrowserRouter, Route, Routes } from 'react-router';
 import type { ReactNode } from 'react';
+import { BrowseLayout } from './components/BrowseLayout/BrowseLayout.tsx';
 import { NotFoundPage } from './components/NotFound/NotFoundPage.tsx';
 import { useAuth } from './features/auth/AuthContext.ts';
 import { AuthProvider } from './features/auth/AuthProvider.tsx';
 import { LoginPage } from './features/auth/LoginPage.tsx';
 import { RedirectIfAuthed, RequireAuth } from './features/auth/RouteGuards.tsx';
 import { HomePage } from './features/catalog/HomePage.tsx';
+import { SearchPage } from './features/catalog/SearchPage.tsx';
 import { PlayerPage } from './features/playback/PlayerPage.tsx';
 import { ProfileEditorPage } from './features/profiles/ProfileEditorPage.tsx';
 import { ProfileProvider } from './features/profiles/ProfileProvider.tsx';
@@ -34,6 +36,7 @@ function ProfilesForAccount({ children }: { children: ReactNode }) {
       : null;
   return <ProfileProvider account={account}>{children}</ProfileProvider>;
 }
+import { SEARCH_PATH } from './lib/routes.ts';
 
 function App() {
   return (
@@ -43,7 +46,10 @@ function App() {
           <Routes>
             <Route element={<RequireAuth />}>
               <Route element={<RequireProfile />}>
-                <Route path="/" element={<HomePage />} />
+                <Route element={<BrowseLayout />}>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path={SEARCH_PATH} element={<SearchPage />} />
+                </Route>
                 <Route path="/player/:id" element={<PlayerPage />} />
               </Route>
               <Route path="/profiles" element={<ProfilesPage />} />
