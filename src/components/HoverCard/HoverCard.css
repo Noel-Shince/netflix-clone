@@ -1,0 +1,108 @@
+.hover-card {
+  position: fixed;
+  z-index: 1000;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #141414;
+  box-shadow:
+    0 0 1px rgba(0, 0, 0, 0.3),
+    0 12px 32px rgba(0, 0, 0, 0.7);
+  animation: hover-card-in 0.2s ease both;
+}
+
+@keyframes hover-card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hover-card {
+    animation: none;
+  }
+}
+
+.hover-card__media {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.hover-card__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.hover-card__poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-position: center;
+  background-size: cover;
+}
+
+.hover-card__panel {
+  padding: 12px 14px 14px;
+}
+
+.hover-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hover-card__btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background: rgba(42, 42, 42, 0.6);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.hover-card__btn:hover {
+  border-color: var(--color-text);
+  background: rgba(42, 42, 42, 0.9);
+}
+
+.hover-card__btn--play {
+  border-color: var(--color-text);
+  background: var(--color-text);
+  color: #000;
+}
+
+.hover-card__btn--play:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.hover-card__btn--expand {
+  margin-left: auto;
+}
+
+.hover-card__name {
+  margin-top: 10px;
+  overflow: hidden;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hover-card__meta {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
