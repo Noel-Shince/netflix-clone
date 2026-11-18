@@ -3,7 +3,7 @@
  * to the player. Shared by TitleRow (home rows, "More Like This") and the
  * search results grid; the parent decides the card's width.
  *
- * Round Play and + My List buttons sit over the artwork (slice 11). They are
+ * Round Play and + My List buttons sit over the artwork (slice 12). They are
  * siblings of the card's link, not inside it: a button inside a link is
  * invalid HTML.
  */

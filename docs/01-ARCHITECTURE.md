@@ -196,14 +196,14 @@ public/            Static files served as-is (favicon)
   Firebase reports a new user before `updateProfile(displayName)` finishes; the same flag drives
   the login button's busy state.
 
-## ADR-11: My List in Firestore (Lite)
+## ADR-12: My List in Firestore (Lite)
 
 - **Decision:** saved titles live in Firestore at `{owner}/myList/{mediaType}-{tmdbId}`, owner
   `users/{uid}` (per profile once profiles land). `lib/myList.ts` holds the only My List Firestore
   calls: it reads the list once per owner into a small store behind `useSyncExternalStore`, and
   each add / remove updates that store after its write succeeds, so every "+ My List" button and
   the My List page stay in sync. `firestore.rules` allows only the owner and validates each
-  document's fields. Added in slice 11.
+  document's fields. Added in slice 12.
 - **Why Firestore over localStorage:** the list should follow the account to another device. This
   supersedes ADR-10's "no Firestore" note, which was scoped to auth only.
 - **Why Firestore Lite:** the full SDK grows the bundle from about 120 KB to 263 KB gzipped; Lite

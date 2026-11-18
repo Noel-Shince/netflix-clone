@@ -1,4 +1,4 @@
-# 11 — Working nav: browse pages, My List, languages, notifications
+# 12 — Working nav: browse pages, My List, languages, notifications
 
 **Goal:** every item in the top nav does something. A signed-in user can browse TV shows, movies
 and what's new, save titles to My List, browse by original language, and open a notifications
@@ -11,7 +11,7 @@ menu.
 - [x] TV shows play: cards link to `/player/tv/:id`, which loads `/tv/{id}` details and trailer.
       Movie URLs (`/player/:id`) are unchanged.
 - [x] **My List** (`/my-list`): "+ My List" on the hero, the player page and every card (hover on
-      desktop, always visible on touch) saves to Firestore (Lite SDK, see ADR-11); the page shows a grid, newest first,
+      desktop, always visible on touch) saves to Firestore (Lite SDK, see ADR-12); the page shows a grid, newest first,
       with Remove buttons and an empty state.
 - [x] **Browse by Languages** (`/languages?lang=ko`): picker of 12 original languages; four rows
       (popular / top-rated movies and TV) from TMDB `discover`. The choice is in the URL.
@@ -35,7 +35,7 @@ menu.
 ## Notes / decisions
 
 - **Firestore, not localStorage, for My List,** so the list follows the account across devices.
-  This reverses ADR-10's "no Firestore" now that the PRD scope grew; see ADR-11.
+  This reverses ADR-10's "no Firestore" now that the PRD scope grew; see ADR-12.
 - **Owner setup (one-time):** Firebase console → Build → Firestore Database → Create database
   (production mode, any region), then Rules → paste `firestore.rules` → Publish. Until then, My
   List buttons stay disabled and the page says it couldn't load. The deploy workflow only deploys

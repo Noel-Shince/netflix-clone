@@ -2,7 +2,7 @@
  * Top navigation bar shared by logged-in pages.
  *
  * Transparent over the hero, solid once the page scrolls. Every link routes to
- * a browse page (slice 11); below 1100px they collapse into a "Browse" menu.
+ * a browse page (slice 12); below 1100px they collapse into a "Browse" menu.
  * The search box opens from the search icon; the bell opens NotificationsMenu.
  *
  * Search: the icon opens a text box, and typing updates `/search?q=` after a

@@ -4,7 +4,7 @@
  * Initialises the app once from the VITE_FIREBASE_* variables (ADR-4) and
  * exposes the handful of auth operations the app needs as plain functions, so
  * components never touch `firebase/*` and swapping the provider stays a
- * one-file change. Added in slice 05. Slice 11 adds the Firestore handle `db`,
+ * one-file change. Added in slice 05. Slice 12 adds the Firestore handle `db`,
  * used only by lib/myList.ts.
  */
 import { FirebaseError, initializeApp } from 'firebase/app';

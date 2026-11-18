@@ -2,10 +2,10 @@ rules_version = '2';
 
 // Firestore security rules. Everything not matched below is denied.
 // Publish with `firebase deploy --only firestore:rules`, or paste into
-// Firebase console > Firestore Database > Rules (see docs/slices/11-nav-pages.md).
+// Firebase console > Firestore Database > Rules (see docs/slices/12-nav-pages.md).
 service cloud.firestore {
   match /databases/{database}/documents {
-    // My List (slice 11): one doc per saved title, readable and writable only
+    // My List (slice 12): one doc per saved title, readable and writable only
     // by the signed-in owner, with the fields checked on every write.
     match /users/{uid}/myList/{titleKey} {
       allow read, delete: if request.auth != null && request.auth.uid == uid;
