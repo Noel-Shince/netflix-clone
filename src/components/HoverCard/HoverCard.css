@@ -7,6 +7,7 @@
   box-shadow:
     0 0 1px rgba(0, 0, 0, 0.3),
     0 12px 32px rgba(0, 0, 0, 0.7);
+  cursor: pointer;
   animation: hover-card-in 0.2s ease both;
 }
 
@@ -47,6 +48,13 @@
   background-size: cover;
 }
 
+/* Transparent; its only job is to sit above the iframe and catch the click
+   that the iframe's own document would otherwise swallow. */
+.hover-card__media-link {
+  position: absolute;
+  inset: 0;
+}
+
 .hover-card__panel {
   padding: 12px 14px 14px;
 }
@@ -55,6 +63,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.hover-card__actions > * {
+  flex-shrink: 0;
 }
 
 .hover-card__btn {
