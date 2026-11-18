@@ -9,7 +9,9 @@ Not a regression in [slice 16](16-hover-preview-click-resume.md)'s click/resume 
 player's "More Like This" row has been movie-only since [slice 09](09-recommendations.md):
 
 ```tsx
-{title?.mediaType === 'movie' && <MoreLikeThis id={title.id} />}
+{
+  title?.mediaType === 'movie' && <MoreLikeThis id={title.id} />;
+}
 ```
 
 Slices 15–16 made the hero banner and every card's hover popup clickable as a whole, which made
@@ -33,5 +35,5 @@ is a bigger, separate change than this bug report asked for.
 **A sharp edge caught while making this change:** `fetchPicksFor` used to call
 `seeds.map(fetchRelatedTitles)` directly. With `fetchRelatedTitles` now taking a second
 parameter, `Array.prototype.map`'s own `(value, index, array)` callback shape would have passed
-each seed's *array index* as `mediaType` — wrong value, and TypeScript catches the type
+each seed's _array index_ as `mediaType` — wrong value, and TypeScript catches the type
 mismatch. Changed to an explicit `seeds.map((id) => fetchRelatedTitles(id, 'movie'))`.
