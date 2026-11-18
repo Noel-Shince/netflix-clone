@@ -75,36 +75,38 @@
   font-size: 0.875rem;
 }
 
-/* Search: an icon that opens into a bordered box, as on most streaming sites. */
+/* Search: a persistent rounded pill, always visible (not an icon you open),
+   matching Netflix's own navbar search box. */
 .navbar__search {
   display: flex;
   align-items: center;
-  border: 1px solid transparent;
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--color-text-muted);
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.75);
+  transition: border-color 0.2s ease;
 }
 
-.navbar__search--open {
+.navbar__search:focus-within {
   border-color: var(--color-text);
-  background-color: rgba(0, 0, 0, 0.75);
+}
+
+.navbar__search-icon {
+  flex: none;
+  color: var(--color-text-muted);
+  font-size: 1.125rem;
 }
 
 .navbar__search-input {
-  width: clamp(120px, 18vw, 220px);
-  padding: 6px 4px;
+  width: clamp(140px, 16vw, 220px);
+  padding: 8px 0;
   border: 0;
   outline: none;
   background: transparent;
   color: var(--color-text);
   font: inherit;
   font-size: 0.875rem;
-}
-
-/* The box itself carries the focus ring; the input's own ring would sit inside it. */
-.navbar__search--open:focus-within {
-  outline: 2px solid var(--color-text);
-  outline-offset: 1px;
 }
 
 /* Browsers' built-in clear button duplicates ours. */
@@ -117,6 +119,8 @@
 }
 
 .navbar__search-clear {
+  flex: none;
+  padding: 0;
   font-size: 1rem;
 }
 
@@ -400,14 +404,12 @@
     padding: 6px 10px;
   }
 
-  /* Room for the open search box on phones. */
-  .navbar__search--open ~ .navbar__icon-button,
-  .navbar__search--open ~ .navbar__notifications {
-    display: none;
+  .navbar__search {
+    padding: 0 8px;
   }
 
   .navbar__search-input {
-    width: 34vw;
+    width: 28vw;
   }
 
   .navbar__right {
