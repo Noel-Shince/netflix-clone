@@ -1,0 +1,50 @@
+.title-card {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.title-card__art {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border-radius: 4px;
+  background-color: var(--color-surface);
+  background-position: center;
+  background-size: cover;
+  object-fit: cover;
+}
+
+.title-card__skeleton-name {
+  width: 70%;
+  height: 0.8125rem;
+  margin-top: 8px;
+}
+
+/* Row scrollers clip outlines, so the focus ring is drawn inside the artwork. */
+.title-card:focus-visible {
+  outline: none;
+}
+
+.title-card:focus-visible .title-card__art {
+  outline: 2px solid var(--color-text);
+  outline-offset: -2px;
+}
+
+.title-card:hover .title-card__art {
+  filter: brightness(1.15);
+}
+
+.title-card:hover .title-card__name,
+.title-card:focus-visible .title-card__name {
+  color: var(--color-text);
+}
+
+.title-card__name {
+  margin-top: 6px;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

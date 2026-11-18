@@ -7,3 +7,11 @@
 export function playerPath(id: number): string {
   return `/player/${id}`;
 }
+
+/** The search results page. The query lives in the URL so results survive reloads and Back. */
+export const SEARCH_PATH = '/search';
+export const SEARCH_PARAM = 'q';
+
+export function searchPath(query: string): string {
+  return `${SEARCH_PATH}?${new URLSearchParams({ [SEARCH_PARAM]: query })}`;
+}

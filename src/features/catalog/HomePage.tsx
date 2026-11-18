@@ -1,11 +1,10 @@
 /**
- * Home / browse page: navbar, hero with an overlapping row, more rows, footer.
+ * Home / browse page: hero with an overlapping row, then more rows. The
+ * navbar and footer come from BrowseLayout.
  *
  * The only place that knows which TMDB list feeds which row. Each section
  * fetches on its own, so rows appear as they arrive and fail independently.
  */
-import { Footer } from '../../components/Footer/Footer.tsx';
-import { Navbar } from '../../components/Navbar/Navbar.tsx';
 import { useAsync } from '../../lib/useAsync.ts';
 import { fetchFeaturedTitle, fetchMovieRow, type MovieListPath } from './api/catalogApi.ts';
 import { Hero } from './components/Hero/Hero.tsx';
@@ -42,19 +41,15 @@ export function HomePage() {
   const featured = useAsync(fetchFeaturedTitle);
 
   return (
-    <>
-      <Navbar />
-      <main className="home">
-        <Hero result={featured.result} onRetry={featured.retry}>
-          <CatalogRow config={HERO_ROW} />
-        </Hero>
-        <div className="home__rows">
-          {ROWS.map((config) => (
-            <CatalogRow key={config.id} config={config} />
-          ))}
-        </div>
-      </main>
-      <Footer />
-    </>
+    <main className="home">
+      <Hero result={featured.result} onRetry={featured.retry}>
+        <CatalogRow config={HERO_ROW} />
+      </Hero>
+      <div className="home__rows">
+        {ROWS.map((config) => (
+          <CatalogRow key={config.id} config={config} />
+        ))}
+      </div>
+    </main>
   );
 }

@@ -10,13 +10,11 @@
  * which blocks vertical page scroll while the cursor is over a row.
  */
 import { useRef } from 'react';
-import { Link } from 'react-router';
 import { ChevronLeftIcon, ChevronRightIcon } from '../../../../components/icons/Icons.tsx';
-import { placeholderGradient } from '../../../../lib/placeholderArt.ts';
-import { playerPath } from '../../../../lib/routes.ts';
 import { tmdbErrorMessage } from '../../../../lib/tmdb.ts';
 import type { AsyncResult } from '../../../../lib/useAsync.ts';
 import type { CatalogTitle } from '../../types.ts';
+import { TitleCard, TitleCardSkeleton } from '../TitleCard/TitleCard.tsx';
 import './TitleRow.css';
 
 const SKELETON_CARDS = 8;
@@ -53,8 +51,7 @@ export function TitleRow({ id, heading, result, onRetry }: TitleRowProps) {
         <ul className="title-row__list" aria-hidden="true">
           {Array.from({ length: SKELETON_CARDS }, (_, i) => (
             <li key={i} className="title-row__card">
-              <div className="skeleton title-row__art" />
-              <div className="skeleton title-row__skeleton-name" />
+              <TitleCardSkeleton />
             </li>
           ))}
         </ul>
@@ -87,26 +84,7 @@ export function TitleRow({ id, heading, result, onRetry }: TitleRowProps) {
           <ul ref={scrollerRef} className="title-row__list">
             {result.data.map((title) => (
               <li key={title.id} className="title-row__card">
-                <Link className="title-row__link" to={playerPath(title.id)}>
-                  {title.imageUrl ? (
-                    // Empty alt: the title name is printed right below the image.
-                    <img
-                      className="title-row__art"
-                      src={title.imageUrl}
-                      alt=""
-                      width={300}
-                      height={169}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <div
-                      className="title-row__art"
-                      style={{ backgroundImage: placeholderGradient(title.id) }}
-                    />
-                  )}
-                  <p className="title-row__name">{title.name}</p>
-                </Link>
+                <TitleCard title={title} />
               </li>
             ))}
           </ul>
