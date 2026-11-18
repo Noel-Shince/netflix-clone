@@ -148,11 +148,21 @@ function PlayerScreen({
 
   const showLoading = result.status === 'loading' || (title != null && !resumePoint.ready);
 
+  // Full-bleed black screen with nothing else on it (matches Netflix's own
+  // loading screen, see docs/slices/18-vidsrc-playback.md) — no back button
+  // or page padding until there is something to show.
+  if (showLoading) {
+    return (
+      <main className="player player--loading" aria-busy="true">
+        <LoadingState />
+      </main>
+    );
+  }
+
   return (
-    <main className="player" aria-busy={showLoading}>
+    <main className="player">
       <BackButton />
 
-      {showLoading && <LoadingState />}
       {result.status === 'error' && (
         <ErrorState notFound={isNotFound(result.error)} error={result.error} onRetry={retry} />
       )}
@@ -235,13 +245,9 @@ function MoreLikeThis({ id, mediaType }: { id: number; mediaType: MediaType }) {
   );
 }
 
-/** Matches Netflix's own watch screen: plain black, centered red spinner. */
+/** Plain black, centered red spinner — see `.player--loading` in PlayerPage.css. */
 function LoadingState() {
-  return (
-    <div className="player__stage player__stage--loading" aria-hidden="true">
-      <span className="player__spinner" />
-    </div>
-  );
+  return <span className="player__spinner" aria-hidden="true" />;
 }
 
 interface ErrorStateProps {
