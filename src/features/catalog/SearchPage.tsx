@@ -11,8 +11,8 @@ import { useSearchParams } from 'react-router';
 import { SEARCH_PARAM } from '../../lib/routes.ts';
 import { tmdbErrorMessage } from '../../lib/tmdb.ts';
 import { useAsync } from '../../lib/useAsync.ts';
+import { TitleCard, TitleCardSkeleton } from '../../components/TitleCard/TitleCard.tsx';
 import { searchMovies } from './api/catalogApi.ts';
-import { TitleCard, TitleCardSkeleton } from './components/TitleCard/TitleCard.tsx';
 import './SearchPage.css';
 
 const SKELETON_CARDS = 12;

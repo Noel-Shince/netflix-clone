@@ -1,4 +1,4 @@
-# 09 — Movie search
+# 10 — Movie search
 
 **Goal:** a signed-in user can search for a movie by title from the navbar and see matching
 results, using the same catalog data pipeline as the home page.

@@ -1,15 +1,15 @@
 /**
  * One title: artwork (or a placeholder gradient) with its name below, linking
- * to the player. Shared by the home page rows and the search results grid;
- * the parent decides the card's width.
+ * to the player. Shared by TitleRow (home rows, "More Like This") and the
+ * search results grid; the parent decides the card's width.
  */
 import { Link } from 'react-router';
-import { placeholderGradient } from '../../../../lib/placeholderArt.ts';
-import { playerPath } from '../../../../lib/routes.ts';
-import type { CatalogTitle } from '../../types.ts';
+import { placeholderGradient } from '../../lib/placeholderArt.ts';
+import { playerPath } from '../../lib/routes.ts';
+import type { RowTitle } from '../TitleRow/TitleRow.tsx';
 import './TitleCard.css';
 
-export function TitleCard({ title }: { title: CatalogTitle }) {
+export function TitleCard({ title }: { title: RowTitle }) {
   return (
     <Link className="title-card" to={playerPath(title.id)}>
       {title.imageUrl ? (
