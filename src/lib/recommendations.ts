@@ -2,49 +2,65 @@
  * Recommendation logic shared by the home page ("Top Picks for You",
  * "Because you watched ...") and the player ("More Like This").
  *
- * TMDB does the item-to-item part: `/movie/{id}/recommendations` lists movies
- * that TMDB users who liked `id` also liked. It is empty for some obscure
- * titles, so `/movie/{id}/similar` (genre and keyword overlap) is the fallback.
+ * TMDB does the item-to-item part: `/movie/{id}/recommendations` (or
+ * `/tv/{id}/recommendations`) lists titles that TMDB users who liked `id`
+ * also liked. It is empty for some obscure titles, so `/similar` (genre and
+ * keyword overlap) is the fallback. Related titles are always the same
+ * media type as `id` — TMDB's own behaviour, not something this maps.
  *
  * `blendRecommendations` does the personal part: it merges the lists for
  * several watched titles into one ranking. See docs/slices/09-recommendations.md.
+ * That personalisation (and the watch history it reads) stays movie-only, by
+ * design (TMDB ids are per media type, and watch history only ever records
+ * movies) — only `fetchRelatedTitles` itself, used directly by the player's
+ * "More Like This", also takes a TV id.
  */
+import type { MediaType } from './media.ts';
 import { tmdbGet, tmdbImageUrl } from './tmdb.ts';
 
 export interface RecommendedTitle {
   id: number;
+  mediaType: MediaType;
   name: string;
   imageUrl: string | null;
 }
 
-interface TmdbMovie {
+/** A TMDB recommendations/similar list item: `title` for movies, `name` for TV. */
+interface TmdbTitleItem {
   id: number;
-  title: string;
+  title?: string;
+  name?: string;
   backdrop_path: string | null;
 }
 
-interface TmdbMovieList {
-  results: TmdbMovie[];
+interface TmdbTitleList {
+  results: TmdbTitleItem[];
 }
 
-function toRecommendedTitle(movie: TmdbMovie): RecommendedTitle {
+function toRecommendedTitle(item: TmdbTitleItem, mediaType: MediaType): RecommendedTitle {
   return {
-    id: movie.id,
-    name: movie.title,
-    imageUrl: tmdbImageUrl(movie.backdrop_path, 'w300'),
+    id: item.id,
+    mediaType,
+    name: item.title ?? item.name ?? 'Untitled',
+    imageUrl: tmdbImageUrl(item.backdrop_path, 'w300'),
   };
 }
 
 /**
- * Movies related to `id`, best match first: TMDB's recommendations, or its
+ * Titles related to `id`, best match first: TMDB's recommendations, or its
  * similar-titles list when there are none. Never includes `id` itself.
  */
-export async function fetchRelatedTitles(id: number): Promise<RecommendedTitle[]> {
-  let list = await tmdbGet<TmdbMovieList>(`/movie/${id}/recommendations`);
+export async function fetchRelatedTitles(
+  id: number,
+  mediaType: MediaType = 'movie',
+): Promise<RecommendedTitle[]> {
+  let list = await tmdbGet<TmdbTitleList>(`/${mediaType}/${id}/recommendations`);
   if (list.results.length === 0) {
-    list = await tmdbGet<TmdbMovieList>(`/movie/${id}/similar`);
+    list = await tmdbGet<TmdbTitleList>(`/${mediaType}/${id}/similar`);
   }
-  return list.results.filter((m) => m.id !== id).map(toRecommendedTitle);
+  return list.results
+    .filter((item) => item.id !== id)
+    .map((item) => toRecommendedTitle(item, mediaType));
 }
 
 /** How many of the most recent watched titles seed the blended row. */
@@ -100,7 +116,11 @@ export function blendRecommendations(
  */
 export async function fetchPicksFor(watchedIds: number[]): Promise<RecommendedTitle[]> {
   const seeds = watchedIds.slice(0, MAX_SEEDS);
-  const settled = await Promise.allSettled(seeds.map(fetchRelatedTitles));
+  // Explicit arrow, not a bare `seeds.map(fetchRelatedTitles)`: Array.map's
+  // own (value, index, array) callback would otherwise pass the seed's
+  // index as fetchRelatedTitles's mediaType argument. Watch history is
+  // movie-only (see watchHistory.ts), so these seeds always are too.
+  const settled = await Promise.allSettled(seeds.map((id) => fetchRelatedTitles(id, 'movie')));
   const first = settled[0];
   if (first?.status === 'rejected' && settled.every((r) => r.status === 'rejected')) {
     throw first.reason;
