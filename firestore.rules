@@ -48,5 +48,26 @@ service cloud.firestore {
           || (request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() <= 500))
         && request.resource.data.addedAt == request.time;
     }
+
+    // Playback resume points (slice 18): one doc per title under the
+    // viewing profile, written from the vidsrc.sh postMessage events the
+    // player page listens for.
+    match /users/{uid}/profiles/{profileId}/watchProgress/{titleKey} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(
+          ['id', 'mediaType', 'name', 'progressSeconds', 'durationSeconds', 'completed', 'updatedAt']
+        )
+        && request.resource.data.id is int
+        && request.resource.data.mediaType in ['movie', 'tv']
+        && titleKey == request.resource.data.mediaType + '-' + string(request.resource.data.id)
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 300
+        && request.resource.data.progressSeconds is int
+        && request.resource.data.progressSeconds >= 0
+        && (request.resource.data.durationSeconds == null || request.resource.data.durationSeconds is int)
+        && request.resource.data.completed is bool
+        && request.resource.data.updatedAt == request.time;
+    }
   }
 }
