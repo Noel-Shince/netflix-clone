@@ -105,6 +105,7 @@ Each slice has a spec in [docs/slices/](docs/slices/) and landed as one PR.
 - [x] 07 [Responsive pass](docs/slices/07-responsive-styling.md)
 - [x] 08 [Deploy to Firebase Hosting](docs/slices/08-deploy.md)
 - [x] 11 [Multiple profiles](docs/slices/11-profiles.md)
+- [x] 14 [Rotating backdrop art](docs/slices/14-rotating-backdrops.md)
 
 Possible follow-ups, not planned: a Cloud Function proxy to keep the TMDB token out of the
 bundle (ADR-4), route-level code splitting, PR preview deploys, automated end-to-end tests.

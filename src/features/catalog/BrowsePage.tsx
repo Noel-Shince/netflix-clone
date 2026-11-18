@@ -15,8 +15,9 @@ import { Hero } from './components/Hero/Hero.tsx';
 import './HomePage.css';
 
 export interface BrowsePageConfig {
-  /** Module-level loader, so its identity is stable for useAsync. */
-  loadFeatured: () => Promise<FeaturedTitle>;
+  /** Module-level loader, so its identity is stable for useAsync. Resolves to
+   * several candidates: the hero rotates through them (slice 13). */
+  loadFeaturedTitles: () => Promise<FeaturedTitle[]>;
   /** Row shown overlapping the bottom of the hero. */
   heroRow: RowConfig;
   rows: RowConfig[];
@@ -30,7 +31,7 @@ export function CatalogRow({ config }: { config: RowConfig }) {
 }
 
 export function BrowsePage({ config }: { config: BrowsePageConfig }) {
-  const featured = useAsync(config.loadFeatured);
+  const featured = useAsync(config.loadFeaturedTitles);
   // Built once per visit, so the personal rows' loaders stay stable for useAsync.
   const [rows] = useState(() => [
     ...(config.personalRows?.(getWatchHistory()) ?? []),

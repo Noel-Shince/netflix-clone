@@ -1,10 +1,58 @@
 /* Profile screens: picker, manage, add / edit (slice 11). */
 
 .profiles {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
+  overflow: hidden;
+}
+
+/* Rotating title art (slice 13), darkened and tinted so the picker's white
+   text and avatar tiles stay readable over any image. */
+.profiles__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background-color: var(--color-bg);
+}
+
+.profiles__backdrop-image {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  filter: grayscale(0.3);
+  animation: profiles-backdrop-in 1.2s ease both;
+}
+
+.profiles__backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 15%, rgba(229, 9, 20, 0.45), transparent 55%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.55) 40%, var(--color-bg) 100%);
+}
+
+@keyframes profiles-backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profiles__backdrop-image {
+    animation: none;
+  }
+}
+
+.profiles__header,
+.profiles__main {
+  position: relative;
+  z-index: 1;
 }
 
 .profiles__header {
