@@ -15,12 +15,18 @@
  *
  * Sign out only calls Firebase; the route guard then sends the user to /login,
  * so this shared component needs no knowledge of the auth feature (ADR-2).
+ *
+ * The account menu shows the active profile's avatar and lets the user switch
+ * to another profile or manage them (slice 11). Profile state comes from
+ * lib/profileContext.ts, not from the profiles feature, for the same reason.
  */
 import { useCallback, useEffect, useId, useRef, useState, type RefObject } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router';
 import { logOut } from '../../lib/firebase.ts';
+import { useProfiles } from '../../lib/profileContext.ts';
 import { ROUTES, SEARCH_PARAM, SEARCH_PATH, searchPath } from '../../lib/routes.ts';
 import { Logo } from '../Logo/Logo.tsx';
+import { ProfileAvatar } from '../ProfileAvatar/ProfileAvatar.tsx';
 import { CaretDownIcon, CloseIcon, SearchIcon } from '../icons/Icons.tsx';
 import { NotificationsMenu } from './NotificationsMenu.tsx';
 import { useDismiss } from './useDismiss.ts';
@@ -90,6 +96,9 @@ export function Navbar() {
   const profileRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const menuId = useId();
+  const navigate = useNavigate();
+  const { profiles, activeProfile, selectProfile } = useProfiles();
+  const otherProfiles = profiles.filter((profile) => profile.id !== activeProfile?.id);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const search = useSearchBox(searchInputRef);
 
@@ -202,25 +211,54 @@ export function Navbar() {
             ref={menuButtonRef}
             type="button"
             className="navbar__profile-button"
-            aria-label="Account menu"
+            aria-label={activeProfile ? `Account menu, ${activeProfile.name}` : 'Account menu'}
             aria-haspopup="true"
             aria-expanded={menuOpen}
             aria-controls={menuId}
             onClick={() => setMenuOpen((open) => !open)}
           >
-            <span className="navbar__avatar" aria-hidden="true" />
+            {activeProfile ? (
+              <ProfileAvatar avatar={activeProfile.avatar} size={32} className="navbar__avatar" />
+            ) : (
+              <span className="navbar__avatar navbar__avatar--empty" aria-hidden="true" />
+            )}
             <CaretDownIcon className="navbar__caret" />
           </button>
           <div id={menuId} className="navbar__dropdown">
-            <button
-              type="button"
-              className="navbar__dropdown-item"
-              onClick={() => {
-                logOut().catch((error: unknown) => console.error('Sign out failed', error));
-              }}
-            >
-              Sign out
-            </button>
+            <div className="navbar__dropdown-panel">
+              {otherProfiles.map((profile) => (
+                <button
+                  key={profile.id}
+                  type="button"
+                  className="navbar__dropdown-item navbar__dropdown-item--profile"
+                  aria-label={`Switch to ${profile.name}`}
+                  onClick={() => {
+                    selectProfile(profile.id);
+                    setMenuOpen(false);
+                    navigate('/');
+                  }}
+                >
+                  <ProfileAvatar avatar={profile.avatar} size={28} />
+                  <span className="navbar__dropdown-name">{profile.name}</span>
+                </button>
+              ))}
+              <Link
+                to="/profiles/manage"
+                className="navbar__dropdown-item"
+                onClick={() => setMenuOpen(false)}
+              >
+                Manage profiles
+              </Link>
+              <button
+                type="button"
+                className="navbar__dropdown-item navbar__dropdown-item--signout"
+                onClick={() => {
+                  logOut().catch((error: unknown) => console.error('Sign out failed', error));
+                }}
+              >
+                Sign out
+              </button>
+            </div>
           </div>
         </div>
       </div>

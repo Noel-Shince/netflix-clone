@@ -3,8 +3,9 @@
  *
  * Data lives at `{ownerPath}/myList/{mediaType}-{tmdbId}`, one small document
  * per title (id, mediaType, name, imageUrl, addedAt). The owner path is set
- * from outside (`setMyListOwner`, called by App) rather than built here, so
- * scoping the list to a profile instead of an account is a one-line change.
+ * from outside (`setMyListOwner`, called by App with the active profile's
+ * path, `users/{uid}/profiles/{slot}`), so this module knows nothing of auth
+ * or profiles.
  *
  * Uses Firestore Lite (no live listeners, about 110 KB gzipped smaller than
  * the full SDK). The list is read once per owner into a tiny external store
@@ -22,6 +23,7 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  writeBatch,
 } from 'firebase/firestore/lite';
 import { useSyncExternalStore } from 'react';
 import { db } from './firebase.ts';
@@ -141,4 +143,20 @@ export async function removeFromMyList(title: Pick<TitleRef, 'id' | 'mediaType'>
   if (owner === ownerPath && state.status === 'ready') {
     emit({ status: 'ready', items: withoutTitle(state.items, title) });
   }
+}
+
+/**
+ * Deletes every saved title under `owner` (a profile's document path). Called
+ * when a profile is deleted, because profile slots are reused and a new
+ * profile must not inherit the old one's list.
+ */
+export async function clearMyList(owner: string): Promise<void> {
+  const snapshot = await getDocs(collection(db, owner, 'myList'));
+  // A batch holds at most 500 writes.
+  for (let i = 0; i < snapshot.docs.length; i += 500) {
+    const batch = writeBatch(db);
+    snapshot.docs.slice(i, i + 500).forEach((entry) => batch.delete(entry.ref));
+    await batch.commit();
+  }
+  if (owner === ownerPath && state.status === 'ready') emit({ status: 'ready', items: [] });
 }

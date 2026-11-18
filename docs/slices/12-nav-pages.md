@@ -40,9 +40,9 @@ menu.
   (production mode, any region), then Rules → paste `firestore.rules` → Publish. Until then, My
   List buttons stay disabled and the page says it couldn't load. The deploy workflow only deploys
   Hosting, so rule changes are published by hand (or `firebase deploy --only firestore:rules`).
-- **Profile seam:** `lib/myList.ts` takes an owner document path. `App`'s `MyListOwner` sets it to
-  `users/{uid}` today; with profiles it becomes `users/{uid}/profiles/{profileId}`, and the rules
-  block moves under that path.
+- **Per profile:** `lib/myList.ts` takes an owner document path. `App`'s `MyListOwner` sets it to
+  the active profile, `users/{uid}/profiles/{slot}`, so each profile has its own list. Deleting a
+  profile clears its list (`clearMyList`), because slots are reused.
 - **Language means original language** (`with_original_language`), not available dubs or
   subtitles, which TMDB does not expose per region.
 - Top-rated language rows require 200+ votes, so a title with three 10/10 votes doesn't top the row.

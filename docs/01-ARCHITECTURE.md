@@ -184,7 +184,7 @@ public/            Static files served as-is (favicon)
 - **Why guards over an effect:** the tutorial navigates from an `onAuthStateChanged` effect, which
   renders the wrong page first and then jumps. A guard decides before rendering, shows a blank
   screen while Firebase restores the session, and remembers the requested URL for after sign-in.
-- **Why no Firestore:** the tutorial stores each user's name in a Firestore `users` collection.
+- **Why no Firestore (v1):** the tutorial stores each user's name in a Firestore `users` collection.
   The Auth profile's `displayName` holds the same data with no database or security rules, so
   the PRD's "auth only" scope holds.
 - **Cost:** Firebase Auth adds about 32 KB gzipped to the JS bundle (87 KB → 120 KB). Everything
@@ -196,20 +196,41 @@ public/            Static files served as-is (favicon)
   Firebase reports a new user before `updateProfile(displayName)` finishes; the same flag drives
   the login button's busy state.
 
+## ADR-11: Firestore (lite SDK) for profiles and per-user data
+
+- **Decision:** add Cloud Firestore, accessed through the **lite** SDK
+  (`firebase/firestore/lite`), for viewing profiles (slice 11) and later per-profile data. `db` is
+  created in `src/lib/firebase.ts`; each data area gets its own module in `lib/` (`profiles.ts`).
+  Security rules live in `firestore.rules` at the repo root. Supersedes ADR-10's "no Firestore".
+- **Data shape:** `users/{uid}/profiles/{slot}`, slot ids `p1`–`p5`, so the rules can cap an
+  account at five profiles. Per-profile data goes in subcollections of the profile document
+  (e.g. `.../profiles/{slot}/myList/{id}`), so one rule per path keeps it owner-only.
+- **Why lite:** measured on this branch, the full SDK takes the main bundle from 120 KB to
+  263 KB gzipped; lite takes it to 156 KB. Lite has the reads and writes this app needs and
+  always reads from the server. It lacks real-time listeners (`onSnapshot`) and the offline
+  cache; nothing here needs either yet. Switching to the full SDK is a one-line import change per
+  module if that changes.
+- **Why Firestore over localStorage:** profiles must follow the account across devices, and
+  rules give real per-user isolation; localStorage would be per-browser only.
+- **Rules:** deny by default, owner-only per path, field validation on writes, no permissive
+  catch-all (Firestore ORs matching `allow`s, so a catch-all would cancel the validation). They
+  are published by hand or with `firebase deploy --only firestore:rules`; the CI deploy account
+  is deliberately limited to Hosting.
+- **Local development:** `VITE_USE_FIREBASE_EMULATORS=true` (dev builds only) points Auth and
+  Firestore at the Firebase emulators configured in `firebase.json`.
+- **Cost:** +36 KB gzipped, one more service to set up (create the database, publish rules), and
+  rules that must be kept in step with the TypeScript types (avatar ids, name length).
+
 ## ADR-12: My List in Firestore (Lite)
 
 - **Decision:** saved titles live in Firestore at `{owner}/myList/{mediaType}-{tmdbId}`, owner
-  `users/{uid}` (per profile once profiles land). `lib/myList.ts` holds the only My List Firestore
+  `users/{uid}/profiles/{slot}` (the active profile, ADR-11). `lib/myList.ts` holds the only My List Firestore
   calls: it reads the list once per owner into a small store behind `useSyncExternalStore`, and
   each add / remove updates that store after its write succeeds, so every "+ My List" button and
   the My List page stay in sync. `firestore.rules` allows only the owner and validates each
   document's fields. Added in slice 12.
-- **Why Firestore over localStorage:** the list should follow the account to another device. This
-  supersedes ADR-10's "no Firestore" note, which was scoped to auth only.
-- **Why Firestore Lite:** the full SDK grows the bundle from about 120 KB to 263 KB gzipped; Lite
-  costs about 36 KB. What Lite lacks (live `onSnapshot` listeners, offline cache) only means a
-  change made on another device appears on the next page load. Profiles use Lite too: mixing the
-  two SDKs would ship both and fail at runtime.
+- **Lite SDK, as ADR-11:** with no live listeners, a change made on another device appears on the
+  next page load. Deleting a profile also deletes its list, since profile slots are reused.
 - **Why the shared button lives in `components/`:** the hero, title cards and the player all
   render it, and features may not import each other (ADR-2).
 - **Cost:** the database and its rules are a one-time manual setup in the Firebase console (the

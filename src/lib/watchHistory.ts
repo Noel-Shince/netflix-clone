@@ -2,14 +2,16 @@
  * Watch history: the titles a user has opened in the player, newest first.
  *
  * It is the only signal the recommendation rows have about a user's taste
- * (slice 09). Stored in localStorage under the signed-in user's id, so two
- * accounts on one browser keep separate histories. It does not follow the
- * user to another device; moving it to Firestore is a later slice.
+ * (slice 09). Stored in localStorage under the signed-in user's id and the
+ * active profile (slice 11), so each profile gets its own history and
+ * recommendations. It does not follow the user to another device; moving it
+ * to Firestore (under users/{uid}/profiles/{slot}) is a later slice.
  *
  * "Watched" means "opened the player page": TMDB only has trailers, so there
  * is no real playback time to measure.
  */
 import { currentUserId } from './firebase.ts';
+import { getStoredActiveProfileId } from './profiles.ts';
 
 export interface WatchedTitle {
   id: number;
@@ -24,7 +26,8 @@ const KEY_PREFIX = 'noelflix:watch-history:';
 
 function storageKey(): string | null {
   const uid = currentUserId();
-  return uid ? `${KEY_PREFIX}${uid}` : null;
+  const profileId = uid ? getStoredActiveProfileId(uid) : null;
+  return uid && profileId ? `${KEY_PREFIX}${uid}:${profileId}` : null;
 }
 
 function isWatchedTitle(value: unknown): value is WatchedTitle {
@@ -56,5 +59,17 @@ export function recordWatch(title: { id: number; name: string }): void {
     localStorage.setItem(key, JSON.stringify(next));
   } catch {
     // Quota or blocked storage: recommendations just stay unpersonalised.
+  }
+}
+
+/**
+ * Deletes one profile's history. Called when the profile is deleted, because
+ * profile slots are reused and a new profile must not inherit the old history.
+ */
+export function clearWatchHistory(uid: string, profileId: string): void {
+  try {
+    localStorage.removeItem(`${KEY_PREFIX}${uid}:${profileId}`);
+  } catch {
+    // Blocked storage: nothing was stored either.
   }
 }
