@@ -29,6 +29,7 @@ import {
 } from '../../lib/profiles.ts';
 import { clearMyList } from '../../lib/myList.ts';
 import { clearWatchHistory } from '../../lib/watchHistory.ts';
+import { clearWatchProgress } from '../../lib/watchProgress.ts';
 
 interface ProfileProviderProps {
   /** The signed-in account, or null while signed out or while sign-up is finishing. */
@@ -163,6 +164,9 @@ export function ProfileProvider({ account, children }: ProfileProviderProps) {
       // leaves orphaned list docs, which the next profile in the slot would see.
       await clearMyList(`users/${uid}/profiles/${id}`).catch((error: unknown) =>
         console.warn('Could not clear My List for the deleted profile', error),
+      );
+      await clearWatchProgress(`users/${uid}/profiles/${id}`).catch((error: unknown) =>
+        console.warn('Could not clear watch progress for the deleted profile', error),
       );
       editProfiles((list) => list.filter((p) => p.id !== id));
       if (activeId === id) clearActiveProfile();

@@ -4,15 +4,6 @@
  */
 import type { MediaType } from '../../lib/media.ts';
 
-export interface Trailer {
-  /** YouTube video id, e.g. "dQw4w9WgXcQ". */
-  youtubeKey: string;
-  /** TMDB's name for the video, e.g. "Official Trailer". */
-  name: string;
-  /** TMDB's video type: Trailer, Teaser, Clip, Featurette, ... */
-  type: string;
-}
-
 export interface PlayableTitle {
   id: number;
   mediaType: MediaType;
@@ -24,6 +15,6 @@ export interface PlayableTitle {
   imageUrl: string | null;
   /** Card-sized backdrop, what My List saves. */
   cardImageUrl: string | null;
-  /** Best YouTube video for the title, or null when there is none. */
-  trailer: Trailer | null;
+  /** IMDB id (e.g. "tt1300854"), or null when TMDB has none for this title. */
+  imdbId: string | null;
 }

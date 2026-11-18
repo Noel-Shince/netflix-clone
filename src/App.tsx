@@ -30,6 +30,7 @@ import { ProfilesPage } from './features/profiles/ProfilesPage.tsx';
 import { RequireProfile } from './features/profiles/RequireProfile.tsx';
 import { useProfiles } from './lib/profileContext.ts';
 import { setMyListOwner } from './lib/myList.ts';
+import { setWatchProgressOwner } from './lib/watchProgress.ts';
 import { ROUTES, SEARCH_PATH } from './lib/routes.ts';
 
 /**
@@ -58,6 +59,17 @@ function MyListOwner() {
   return null;
 }
 
+/** Tells lib/watchProgress whose resume points to read/write: same owner as My List. */
+function WatchProgressOwner() {
+  const { user } = useAuth();
+  const { activeProfile } = useProfiles();
+  const owner = user && activeProfile ? `users/${user.uid}/profiles/${activeProfile.id}` : null;
+  useEffect(() => {
+    setWatchProgressOwner(owner);
+  }, [owner]);
+  return null;
+}
+
 /**
  * Starts each new page at the top. BrowserRouter keeps the old scroll offset
  * otherwise, so going from a scrolled home page to My List lands mid-page.
@@ -75,6 +87,7 @@ function App() {
     <AuthProvider>
       <ProfilesForAccount>
         <MyListOwner />
+        <WatchProgressOwner />
         <BrowserRouter>
           <ScrollToTop />
           <Routes>
