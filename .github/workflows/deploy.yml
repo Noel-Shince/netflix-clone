@@ -13,6 +13,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Least privilege for GITHUB_TOKEN: read code, and let the Firebase action
+# post its deploy check. The deploy itself uses FIREBASE_SERVICE_ACCOUNT.
+permissions:
+  contents: read
+  checks: write
+
 concurrency:
   group: deploy-live
   cancel-in-progress: false

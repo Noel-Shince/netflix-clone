@@ -30,5 +30,8 @@
   "description": "Netflix-style streaming UI built with React, Vite, Firebase Auth and the TMDB API.",
   "engines": {
     "node": ">=20.19"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.7"
   }
 }
