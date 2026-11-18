@@ -13,6 +13,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Least privilege for GITHUB_TOKEN: read code, and let the Firebase action
+# post its deploy check. The deploy itself uses FIREBASE_SERVICE_ACCOUNT.
+permissions:
+  contents: read
+  checks: write
+
 concurrency:
   group: deploy-live
   cancel-in-progress: false
@@ -54,3 +60,16 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
           projectId: netflix-clone-b32df
+      - name: Deploy Firestore rules
+        # firestore.rules (slice 11) is only a file in the repo until this runs: Firebase does
+        # not read it from a GitHub push on its own. Needs the service account to also hold
+        # "Cloud Datastore Index Admin" or "Firebase Rules Admin" — Hosting Admin alone is not
+        # enough and this step fails loudly rather than silently leaving stale rules live.
+        if: env.HAS_DEPLOY_KEY == 'true'
+        run: |
+          echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-deploy-key.json"
+          GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-deploy-key.json" \
+            npx firebase-tools@14 deploy --only firestore:rules --project netflix-clone-b32df
+          rm -f "$RUNNER_TEMP/firebase-deploy-key.json"
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

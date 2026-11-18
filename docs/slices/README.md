@@ -18,6 +18,7 @@ Name: `0X-slice-name.md`, matching branch `feature/0X-slice-name` where the envi
 | 10  | [Movie search](10-movie-search.md)               |
 | 11  | [Multiple profiles](11-profiles.md)              |
 | 12  | [Working nav pages and My List](12-nav-pages.md) |
+| 13  | [Security hardening](13-security-hardening.md)   |
 
 Template:
 
