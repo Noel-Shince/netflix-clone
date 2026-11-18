@@ -1,0 +1,36 @@
+rules_version = '2';
+
+// Firestore security rules (slice 11). Deploy with:
+//   npx firebase-tools deploy --only firestore:rules
+// or paste this file into Firebase console > Firestore Database > Rules.
+//
+// Anything not matched below is denied. Firestore ORs every `allow` that
+// matches a path, so there is deliberately no permissive catch-all: it would
+// override the validation in the specific blocks.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Viewing profiles: users/{uid}/profiles/{slot}. Fixed slot ids cap an
+    // account at five profiles (see src/lib/profiles.ts).
+    match /users/{uid}/profiles/{profileId} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && profileId in ['p1', 'p2', 'p3', 'p4', 'p5']
+        && validProfile(request.resource.data);
+
+      function validProfile(data) {
+        return data.keys().hasOnly(['name', 'avatar', 'createdAt'])
+          && data.keys().hasAll(['name', 'avatar', 'createdAt'])
+          && data.name is string
+          && data.name.size() >= 1
+          && data.name.size() <= 20
+          && data.avatar in ['red', 'blue', 'yellow', 'green', 'purple', 'teal', 'orange', 'pink']
+          && data.createdAt is int;
+      }
+    }
+  }
+}

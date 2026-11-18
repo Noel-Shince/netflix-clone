@@ -184,7 +184,7 @@ public/            Static files served as-is (favicon)
 - **Why guards over an effect:** the tutorial navigates from an `onAuthStateChanged` effect, which
   renders the wrong page first and then jumps. A guard decides before rendering, shows a blank
   screen while Firebase restores the session, and remembers the requested URL for after sign-in.
-- **Why no Firestore:** the tutorial stores each user's name in a Firestore `users` collection.
+- **Why no Firestore (v1):** the tutorial stores each user's name in a Firestore `users` collection.
   The Auth profile's `displayName` holds the same data with no database or security rules, so
   the PRD's "auth only" scope holds.
 - **Cost:** Firebase Auth adds about 32 KB gzipped to the JS bundle (87 KB → 120 KB). Everything
@@ -195,6 +195,31 @@ public/            Static files served as-is (favicon)
   `runAuthAction(fn)`. `RedirectIfAuthed` holds its redirect while an action is pending, because
   Firebase reports a new user before `updateProfile(displayName)` finishes; the same flag drives
   the login button's busy state.
+
+## ADR-11: Firestore (lite SDK) for profiles and per-user data
+
+- **Decision:** add Cloud Firestore, accessed through the **lite** SDK
+  (`firebase/firestore/lite`), for viewing profiles (slice 11) and later per-profile data. `db` is
+  created in `src/lib/firebase.ts`; each data area gets its own module in `lib/` (`profiles.ts`).
+  Security rules live in `firestore.rules` at the repo root. Supersedes ADR-10's "no Firestore".
+- **Data shape:** `users/{uid}/profiles/{slot}`, slot ids `p1`–`p5`, so the rules can cap an
+  account at five profiles. Per-profile data goes in subcollections of the profile document
+  (e.g. `.../profiles/{slot}/myList/{id}`), so one rule per path keeps it owner-only.
+- **Why lite:** measured on this branch, the full SDK takes the main bundle from 120 KB to
+  263 KB gzipped; lite takes it to 156 KB. Lite has the reads and writes this app needs and
+  always reads from the server. It lacks real-time listeners (`onSnapshot`) and the offline
+  cache; nothing here needs either yet. Switching to the full SDK is a one-line import change per
+  module if that changes.
+- **Why Firestore over localStorage:** profiles must follow the account across devices, and
+  rules give real per-user isolation; localStorage would be per-browser only.
+- **Rules:** deny by default, owner-only per path, field validation on writes, no permissive
+  catch-all (Firestore ORs matching `allow`s, so a catch-all would cancel the validation). They
+  are published by hand or with `firebase deploy --only firestore:rules`; the CI deploy account
+  is deliberately limited to Hosting.
+- **Local development:** `VITE_USE_FIREBASE_EMULATORS=true` (dev builds only) points Auth and
+  Firestore at the Firebase emulators configured in `firebase.json`.
+- **Cost:** +36 KB gzipped, one more service to set up (create the database, publish rules), and
+  rules that must be kept in step with the TypeScript types (avatar ids, name length).
 
 ## Conventions
 
