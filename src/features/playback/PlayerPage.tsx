@@ -65,8 +65,12 @@ function useResumePoint(
   id: number,
   mediaType: MediaType,
   previewSeconds: number,
-): { ready: boolean; seconds: number } {
-  const [state, setState] = useState({ ready: false, seconds: previewSeconds });
+): { ready: boolean; seconds: number; hadSavedProgress: boolean } {
+  const [state, setState] = useState({
+    ready: false,
+    seconds: previewSeconds,
+    hadSavedProgress: false,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -77,10 +81,10 @@ function useResumePoint(
           saved && !saved.completed
             ? Math.max(previewSeconds, saved.progressSeconds)
             : previewSeconds;
-        setState({ ready: true, seconds });
+        setState({ ready: true, seconds, hadSavedProgress: saved != null });
       })
       .catch(() => {
-        if (!cancelled) setState({ ready: true, seconds: previewSeconds });
+        if (!cancelled) setState({ ready: true, seconds: previewSeconds, hadSavedProgress: false });
       });
     return () => {
       cancelled = true;
@@ -119,6 +123,22 @@ function PlayerScreen({
       document.title = APP_TITLE;
     };
   }, [title]);
+
+  // Marks the title as watched (Firestore `watchProgress`, which backs the
+  // home page's "Shows You've Watched" row) as soon as it's opened, the same
+  // "watched" = "opened the player page" definition watchHistory.ts already
+  // uses. Without this, the row depended entirely on vidsrc.sh's own
+  // postMessage progress pings (below) ever arriving — which don't always
+  // fire, so a title played start to finish could still never show up.
+  // Only fires once per title (`hadSavedProgress`): a title already resuming
+  // from a previous watchProgress doc has already made it into the row.
+  useEffect(() => {
+    if (!title || !resumePoint.ready || resumePoint.hadSavedProgress) return;
+    saveWatchProgress(
+      { id: title.id, mediaType: title.mediaType, name: title.name },
+      { progressSeconds: resumePoint.seconds, durationSeconds: null, completed: false },
+    );
+  }, [title, resumePoint.ready, resumePoint.hadSavedProgress, resumePoint.seconds]);
 
   // vidsrc.sh reports playback position by postMessage; persist it so the
   // title resumes correctly next time (see lib/watchProgress.ts).
