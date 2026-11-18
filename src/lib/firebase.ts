@@ -4,7 +4,8 @@
  * Initialises the app once from the VITE_FIREBASE_* variables (ADR-4) and
  * exposes the handful of auth operations the app needs as plain functions, so
  * components never touch `firebase/*` and swapping the provider stays a
- * one-file change. Added in slice 05.
+ * one-file change. Added in slice 05. Slice 09 adds the Firestore handle `db`,
+ * used only by lib/myList.ts.
  */
 import { FirebaseError, initializeApp } from 'firebase/app';
 import {
@@ -19,6 +20,7 @@ import {
   updateProfile,
   type User,
 } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 import { requireEnv } from './env.ts';
 
 const app = initializeApp({
@@ -31,6 +33,7 @@ const app = initializeApp({
 });
 
 const auth = getAuth(app);
+export const db = getFirestore(app);
 
 export type AuthUser = User;
 

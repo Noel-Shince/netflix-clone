@@ -1,0 +1,16 @@
+.my-list-button {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.my-list-button button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.my-list-button__error {
+  color: #ffb4b4;
+  font-size: 0.8125rem;
+}

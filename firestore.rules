@@ -1,0 +1,25 @@
+rules_version = '2';
+
+// Firestore security rules. Everything not matched below is denied.
+// Publish with `firebase deploy --only firestore:rules`, or paste into
+// Firebase console > Firestore Database > Rules (see docs/slices/09-nav-pages.md).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // My List (slice 09): one doc per saved title, readable and writable only
+    // by the signed-in owner, with the fields checked on every write.
+    match /users/{uid}/myList/{titleKey} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['id', 'mediaType', 'name', 'imageUrl', 'addedAt'])
+        && request.resource.data.id is int
+        && request.resource.data.mediaType in ['movie', 'tv']
+        && titleKey == request.resource.data.mediaType + '-' + string(request.resource.data.id)
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 300
+        && (request.resource.data.imageUrl == null
+          || (request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() <= 500))
+        && request.resource.data.addedAt == request.time;
+    }
+  }
+}

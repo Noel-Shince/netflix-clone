@@ -5,13 +5,22 @@
  * loading, a message with Retry on failure, and the cards once loaded. Each
  * row loads independently, so one failure never blanks the page.
  *
+ * Hovering a card (or focusing inside it) reveals round Play and + My List
+ * buttons over its artwork, after Netflix's hover card. They sit beside the
+ * card's link, not inside it, because a button inside a link is invalid HTML.
+ *
  * Deliberately uses native overflow scrolling (touch, trackpad, shift+wheel)
  * plus prev/next buttons, instead of the tutorial's wheel-hijacking listener,
  * which blocks vertical page scroll while the cursor is over a row.
  */
 import { useRef } from 'react';
 import { Link } from 'react-router';
-import { ChevronLeftIcon, ChevronRightIcon } from '../../../../components/icons/Icons.tsx';
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PlayIcon,
+} from '../../../../components/icons/Icons.tsx';
+import { MyListButton } from '../../../../components/MyListButton/MyListButton.tsx';
 import { placeholderGradient } from '../../../../lib/placeholderArt.ts';
 import { playerPath } from '../../../../lib/routes.ts';
 import { tmdbErrorMessage } from '../../../../lib/tmdb.ts';
@@ -86,8 +95,8 @@ export function TitleRow({ id, heading, result, onRetry }: TitleRowProps) {
 
           <ul ref={scrollerRef} className="title-row__list">
             {result.data.map((title) => (
-              <li key={title.id} className="title-row__card">
-                <Link className="title-row__link" to={playerPath(title.id)}>
+              <li key={`${title.mediaType}-${title.id}`} className="title-row__card">
+                <Link className="title-row__link" to={playerPath(title.id, title.mediaType)}>
                   {title.imageUrl ? (
                     // Empty alt: the title name is printed right below the image.
                     <img
@@ -107,6 +116,17 @@ export function TitleRow({ id, heading, result, onRetry }: TitleRowProps) {
                   )}
                   <p className="title-row__name">{title.name}</p>
                 </Link>
+                <div className="title-row__actions">
+                  <Link
+                    className="title-row__action title-row__action--play"
+                    to={playerPath(title.id, title.mediaType)}
+                    aria-label={`Play ${title.name}`}
+                    tabIndex={-1}
+                  >
+                    <PlayIcon />
+                  </Link>
+                  <MyListButton className="title-row__action" title={title} iconOnly />
+                </div>
               </li>
             ))}
           </ul>

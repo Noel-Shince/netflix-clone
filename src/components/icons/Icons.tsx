@@ -130,3 +130,19 @@ export function ArrowLeftIcon(props: IconProps) {
     </Svg>
   );
 }
+
+export function PlusIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M12 5v14M5 12h14" />
+    </Svg>
+  );
+}
+
+export function CheckIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M20 6 9 17l-5-5" />
+    </Svg>
+  );
+}

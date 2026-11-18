@@ -1,9 +1,22 @@
 /**
- * Path builders for routes that one feature links to from another.
+ * Route paths, and path builders for routes that one feature links to from another.
  *
  * Features never import each other (ADR-2), so e.g. catalog cards link to the
- * player through this helper instead of reaching into features/playback.
+ * player through this module instead of reaching into features/playback, and
+ * the shared navbar links to every browse page from here.
  */
-export function playerPath(id: number): string {
-  return `/player/${id}`;
+import type { MediaType } from './media.ts';
+
+export const ROUTES = {
+  home: '/',
+  tvShows: '/tv',
+  movies: '/movies',
+  newAndPopular: '/latest',
+  myList: '/my-list',
+  languages: '/languages',
+} as const;
+
+/** Movies keep the original `/player/:id`; TV shows use `/player/tv/:id`. */
+export function playerPath(id: number, mediaType: MediaType = 'movie'): string {
+  return mediaType === 'tv' ? `/player/tv/${id}` : `/player/${id}`;
 }

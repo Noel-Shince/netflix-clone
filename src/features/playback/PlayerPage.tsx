@@ -1,5 +1,5 @@
 /**
- * Player page (`/player/:id`): plays a movie's trailer in an embedded YouTube
+ * Player page (`/player/:id`, `/player/tv/:id`): plays a title's trailer in an embedded YouTube
  * player, with the title's details underneath.
  *
  * TMDB has no actual movie files, so the trailer stands in for playback (PRD
@@ -9,7 +9,9 @@
 import { useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ArrowLeftIcon } from '../../components/icons/Icons.tsx';
+import { MyListButton } from '../../components/MyListButton/MyListButton.tsx';
 import { NotFoundPage } from '../../components/NotFound/NotFoundPage.tsx';
+import type { MediaType } from '../../lib/media.ts';
 import { placeholderGradient } from '../../lib/placeholderArt.ts';
 import { tmdbErrorMessage } from '../../lib/tmdb.ts';
 import { useAsync } from '../../lib/useAsync.ts';
@@ -19,15 +21,16 @@ import './PlayerPage.css';
 
 const APP_TITLE = 'Noelflix';
 
-export function PlayerPage() {
+/** `/player/:id` is a movie, `/player/tv/:id` a TV show (see lib/routes.ts). */
+export function PlayerPage({ mediaType = 'movie' }: { mediaType?: MediaType }) {
   const { id = '' } = useParams();
   // Only plain positive integers are TMDB ids; anything else never hits the API.
   if (!/^[1-9]\d*$/.test(id)) return <NotFoundPage />;
-  return <PlayerScreen key={id} id={Number(id)} />;
+  return <PlayerScreen key={`${mediaType}-${id}`} id={Number(id)} mediaType={mediaType} />;
 }
 
-function PlayerScreen({ id }: { id: number }) {
-  const load = useMemo(() => () => fetchPlayableTitle(id), [id]);
+function PlayerScreen({ id, mediaType }: { id: number; mediaType: MediaType }) {
+  const load = useMemo(() => () => fetchPlayableTitle(id, mediaType), [id, mediaType]);
   const { result, retry } = useAsync(load);
   const title = result.status === 'success' ? result.data : null;
 
@@ -119,6 +122,17 @@ function TitleState({ title }: { title: PlayableTitle }) {
             {trailer.name} · {trailer.type}
           </p>
         )}
+        <div className="player__info-actions">
+          <MyListButton
+            className="player__button player__button--secondary"
+            title={{
+              id: title.id,
+              mediaType: title.mediaType,
+              name: title.name,
+              imageUrl: title.cardImageUrl,
+            }}
+          />
+        </div>
         {title.synopsis && <p className="player__synopsis">{title.synopsis}</p>}
       </section>
     </>

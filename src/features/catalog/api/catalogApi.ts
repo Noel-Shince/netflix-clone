@@ -1,57 +1,77 @@
 /**
  * Catalog data from TMDB, mapped onto the catalog's own types.
  *
- * Which TMDB list feeds which row lives here (ROW_SOURCES), so the home page
- * only deals with headings and `CatalogTitle`s.
+ * A `TitleSource` names one TMDB list (endpoint, query params, and whether it
+ * returns movies, TV shows or both). The browse pages only deal with headings
+ * and sources; this module owns TMDB's field names, which differ between
+ * movies (`title`) and TV shows (`name`).
  */
+import type { MediaType } from '../../../lib/media.ts';
 import { tmdbGet, tmdbImageUrl } from '../../../lib/tmdb.ts';
 import type { CatalogTitle, FeaturedTitle } from '../types.ts';
 
-/** The subset of TMDB's movie list item this app reads. */
-interface TmdbMovie {
+/** The subset of a TMDB list item (movie, TV show or mixed trending) this app reads. */
+interface TmdbListItem {
   id: number;
-  title: string;
+  title?: string;
+  name?: string;
   overview: string;
   backdrop_path: string | null;
+  /** Only present on mixed lists such as /trending/all; can also be "person". */
+  media_type?: string;
+  release_date?: string;
+  first_air_date?: string;
 }
 
-interface TmdbMovieList {
-  results: TmdbMovie[];
+interface TmdbList {
+  results: TmdbListItem[];
 }
 
-/** TMDB list endpoints used by the home page rows. */
-export type MovieListPath =
-  | '/movie/popular'
-  | '/movie/top_rated'
-  | '/movie/now_playing'
-  | '/movie/upcoming'
-  | '/trending/movie/week';
+export interface TitleSource {
+  path: string;
+  /** What the endpoint returns; 'mixed' lists tag each item with its own type. */
+  mediaType: MediaType | 'mixed';
+  params?: Record<string, string>;
+}
 
-function toCatalogTitle(movie: TmdbMovie): CatalogTitle {
+function itemMediaType(item: TmdbListItem, source: TitleSource): MediaType | null {
+  if (source.mediaType !== 'mixed') return source.mediaType;
+  return item.media_type === 'movie' || item.media_type === 'tv' ? item.media_type : null;
+}
+
+function toTitle(item: TmdbListItem, mediaType: MediaType): CatalogTitle {
   return {
-    id: movie.id,
-    name: movie.title,
-    imageUrl: tmdbImageUrl(movie.backdrop_path, 'w300'),
+    id: item.id,
+    mediaType,
+    name: item.title ?? item.name ?? 'Untitled',
+    imageUrl: tmdbImageUrl(item.backdrop_path, 'w300'),
   };
 }
 
-export async function fetchMovieRow(path: MovieListPath): Promise<CatalogTitle[]> {
-  const list = await tmdbGet<TmdbMovieList>(path);
-  return list.results.map(toCatalogTitle);
+export async function fetchTitleRow(source: TitleSource): Promise<CatalogTitle[]> {
+  const list = await tmdbGet<TmdbList>(source.path, source.params);
+  return list.results.flatMap((item) => {
+    const mediaType = itemMediaType(item, source);
+    return mediaType ? [toTitle(item, mediaType)] : [];
+  });
 }
 
 /**
- * The hero title: today's top trending movie that has both artwork and a
+ * The hero title: the first title in `source` that has both artwork and a
  * synopsis, so the banner never renders half-empty.
  */
-export async function fetchFeaturedTitle(): Promise<FeaturedTitle> {
-  const list = await tmdbGet<TmdbMovieList>('/trending/movie/day');
-  const movie = list.results.find((m) => m.backdrop_path && m.overview.trim());
-  if (!movie) throw new Error('TMDB returned no trending movie with artwork.');
-  return {
-    id: movie.id,
-    name: movie.title,
-    synopsis: movie.overview,
-    imageUrl: tmdbImageUrl(movie.backdrop_path, 'w1280'),
-  };
+export async function fetchFeaturedTitle(source: TitleSource): Promise<FeaturedTitle> {
+  const list = await tmdbGet<TmdbList>(source.path, source.params);
+  for (const item of list.results) {
+    const mediaType = itemMediaType(item, source);
+    if (mediaType && item.backdrop_path && item.overview.trim()) {
+      return {
+        ...toTitle(item, mediaType),
+        synopsis: item.overview,
+        backdropUrl: tmdbImageUrl(item.backdrop_path, 'w1280'),
+        year: (item.release_date || item.first_air_date)?.slice(0, 4) || null,
+      };
+    }
+  }
+  throw new Error('TMDB returned no title with artwork for the banner.');
 }

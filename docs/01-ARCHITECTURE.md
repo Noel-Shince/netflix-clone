@@ -196,6 +196,20 @@ public/            Static files served as-is (favicon)
   Firebase reports a new user before `updateProfile(displayName)` finishes; the same flag drives
   the login button's busy state.
 
+## ADR-11: My List in Firestore
+
+- **Decision:** saved titles live in Firestore at `{owner}/myList/{mediaType}-{tmdbId}`, owner
+  `users/{uid}` (per profile once profiles land). `lib/myList.ts` holds the only Firestore calls and
+  one shared `onSnapshot` listener behind `useSyncExternalStore`, so every "+ My List" button and
+  the My List page stay in sync from a single read. `firestore.rules` allows only the owner, and
+  validates each document's fields. Added in slice 09.
+- **Why Firestore over localStorage:** the list should follow the account to another device. This
+  supersedes ADR-10's "no Firestore" note, which was scoped to auth only.
+- **Why the shared button lives in `components/`:** the hero (catalog) and the player (playback)
+  both render it, and features may not import each other (ADR-2).
+- **Cost:** the Firestore SDK grows the JS bundle from about 120 KB to 264 KB gzipped (one chunk); lazy-loading it is the follow-up if load time matters. The database plus its rules are a one-time
+  manual setup in the Firebase console (the deploy workflow ships Hosting only).
+
 ## Conventions
 
 - Components: `PascalCase.tsx` with a sibling `PascalCase.css`.

@@ -146,6 +146,10 @@
   font-size: 0.875rem;
 }
 
+.player__info-actions {
+  margin-top: 12px;
+}
+
 .player__synopsis {
   margin-top: 12px;
   max-width: 70ch;

@@ -30,6 +30,7 @@
 }
 
 .title-row__card {
+  position: relative;
   flex: 0 0 clamp(150px, 22vw, 240px);
   /* Flex items default to min-width: auto (their content), so a long nowrap
      caption would widen the card, and its 16:9 artwork with it. */
@@ -41,7 +42,7 @@
   width: 100%;
   height: auto;
   aspect-ratio: 16 / 9;
-  border-radius: 4px;
+  border-radius: 8px;
   background-color: var(--color-surface);
   background-position: center;
   background-size: cover;
@@ -155,5 +156,70 @@
   .title-row__viewport:hover .title-row__arrow,
   .title-row__arrow:focus-visible {
     opacity: 1;
+  }
+}
+
+/* Card actions (Play, + My List) over the bottom of the artwork. Shown on
+   hover / focus for mouse and keyboard users, always on touch screens, where
+   there is no hover. */
+.title-row__actions {
+  position: absolute;
+  left: 8px;
+  /* Artwork height is card width * 9/16; place the buttons inside its bottom edge. */
+  top: calc(clamp(150px, 22vw, 240px) * 9 / 16 - 44px);
+  display: flex;
+  gap: 6px;
+}
+
+.title-row__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  background: rgba(20, 20, 20, 0.75);
+  color: var(--color-text);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.title-row__action:hover {
+  border-color: var(--color-text);
+}
+
+.title-row__action--play {
+  border-color: var(--color-text);
+  background: var(--color-text);
+  color: #000;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .title-row__actions {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .title-row__card:hover .title-row__actions,
+  .title-row__card:focus-within .title-row__actions {
+    opacity: 1;
+  }
+}
+
+@media (pointer: coarse) {
+  /* Touch: the whole card already plays, so keep just the My List button. */
+  .title-row__action--play {
+    display: none;
+  }
+
+  .title-row__action {
+    width: 44px;
+    height: 44px;
+  }
+
+  .title-row__actions {
+    top: calc(clamp(150px, 22vw, 240px) * 9 / 16 - 50px);
   }
 }
