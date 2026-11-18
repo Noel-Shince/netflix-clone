@@ -11,14 +11,22 @@
  * player (slice 04). My List saves the title (slice 12); More Info opens the
  * same page as Play, whose details section is the only title detail view the
  * app has.
+ *
+ * Once a title's backdrop has had a moment on screen, a muted YouTube
+ * trailer fades in over it and autoplays (Netflix's own hero behaviour).
+ * The backdrop image stays underneath as the immediate, decoration-only
+ * fallback while the trailer is still fetching, erroring, or simply has
+ * none for that title.
  */
 import type { ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { InfoIcon, PlayIcon } from '../../../../components/icons/Icons.tsx';
 import { MyListButton } from '../../../../components/MyListButton/MyListButton.tsx';
 import { placeholderGradient } from '../../../../lib/placeholderArt.ts';
 import { playerPath } from '../../../../lib/routes.ts';
 import { tmdbErrorMessage } from '../../../../lib/tmdb.ts';
+import { fetchTrailerKey, trailerEmbedUrl } from '../../../../lib/trailerUtils.ts';
 import type { AsyncResult } from '../../../../lib/useAsync.ts';
 import { useRotation } from '../../../../lib/useRotation.ts';
 import type { FeaturedTitle } from '../../types.ts';
@@ -42,6 +50,33 @@ export function Hero({ result, onRetry, children }: HeroProps) {
     ? `url(${title.backdropUrl})`
     : `radial-gradient(ellipse at 75% 30%, rgba(229, 9, 20, 0.25), transparent 60%), ${placeholderGradient(0)}`;
 
+  const [trailerKey, setTrailerKey] = useState<string | null>(null);
+  // Resets during render (not in the effect below) when the rotation moves
+  // to a new title, so the old title's key never flashes over the new
+  // backdrop — the same "adjust state when a prop changes" shape useRotation
+  // uses for its own index.
+  const [trailerTitleId, setTrailerTitleId] = useState(title?.id ?? null);
+  if ((title?.id ?? null) !== trailerTitleId) {
+    setTrailerTitleId(title?.id ?? null);
+    setTrailerKey(null);
+  }
+
+  useEffect(() => {
+    if (!title) return;
+    let alive = true;
+    fetchTrailerKey(title.id, title.mediaType)
+      .then((key) => {
+        if (alive) setTrailerKey(key);
+      })
+      .catch(() => {
+        // No trailer: the backdrop image stays as the hero's art.
+      });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-fetch only when the title itself changes, not on every render of the same title.
+  }, [title?.id, title?.mediaType]);
+
   return (
     <section
       className="hero"
@@ -50,7 +85,18 @@ export function Hero({ result, onRetry, children }: HeroProps) {
       aria-busy={result.status === 'loading'}
     >
       <div className="hero__card">
-        <div key={title?.id ?? 'none'} className="hero__backdrop" style={{ backgroundImage }} />
+        <div key={title?.id ?? 'none'} className="hero__backdrop" style={{ backgroundImage }}>
+          {title && trailerKey && (
+            <iframe
+              key={trailerKey}
+              className="hero__trailer"
+              src={trailerEmbedUrl(trailerKey)}
+              title={`${title.name} trailer`}
+              allow="autoplay; encrypted-media"
+              aria-hidden="true"
+            />
+          )}
+        </div>
 
         <div className="hero__caption">
           {result.status === 'loading' && (
