@@ -1,23 +1,36 @@
 /**
- * One horizontally scrolling row of title cards.
+ * One horizontally scrolling row of title cards. Shared by the home page and
+ * the player's "More Like This" row, so it lives in components/.
  *
  * Renders all three states of its row's request: skeleton cards while
  * loading, a message with Retry on failure, and the cards once loaded. Each
  * row loads independently, so one failure never blanks the page.
+ *
+ * Hovering a card (or focusing inside it) reveals round Play and + My List
+ * buttons over its artwork, after Netflix's hover card. They sit beside the
+ * card's link, not inside it, because a button inside a link is invalid HTML.
  *
  * Deliberately uses native overflow scrolling (touch, trackpad, shift+wheel)
  * plus prev/next buttons, instead of the tutorial's wheel-hijacking listener,
  * which blocks vertical page scroll while the cursor is over a row.
  */
 import { useRef } from 'react';
-import { Link } from 'react-router';
-import { ChevronLeftIcon, ChevronRightIcon } from '../../../../components/icons/Icons.tsx';
-import { placeholderGradient } from '../../../../lib/placeholderArt.ts';
-import { playerPath } from '../../../../lib/routes.ts';
-import { tmdbErrorMessage } from '../../../../lib/tmdb.ts';
-import type { AsyncResult } from '../../../../lib/useAsync.ts';
-import type { CatalogTitle } from '../../types.ts';
+import { ChevronLeftIcon, ChevronRightIcon } from '../icons/Icons.tsx';
+import { tmdbErrorMessage } from '../../lib/tmdb.ts';
+import type { MediaType } from '../../lib/media.ts';
+import type { AsyncResult } from '../../lib/useAsync.ts';
+import { TitleCard, TitleCardSkeleton } from '../TitleCard/TitleCard.tsx';
 import './TitleRow.css';
+
+/** What a card needs. Features map their own data onto this shape. */
+export interface RowTitle {
+  id: number;
+  name: string;
+  /** Full image URL, or null when there is no artwork (card shows a placeholder). */
+  imageUrl: string | null;
+  /** Defaults to 'movie' (recommendation rows are movie-only). */
+  mediaType?: MediaType;
+}
 
 const SKELETON_CARDS = 8;
 
@@ -25,7 +38,7 @@ interface TitleRowProps {
   /** Stable key, used for the heading id. */
   id: string;
   heading: string;
-  result: AsyncResult<CatalogTitle[]>;
+  result: AsyncResult<RowTitle[]>;
   onRetry: () => void;
 }
 
@@ -53,8 +66,7 @@ export function TitleRow({ id, heading, result, onRetry }: TitleRowProps) {
         <ul className="title-row__list" aria-hidden="true">
           {Array.from({ length: SKELETON_CARDS }, (_, i) => (
             <li key={i} className="title-row__card">
-              <div className="skeleton title-row__art" />
-              <div className="skeleton title-row__skeleton-name" />
+              <TitleCardSkeleton />
             </li>
           ))}
         </ul>
@@ -86,27 +98,8 @@ export function TitleRow({ id, heading, result, onRetry }: TitleRowProps) {
 
           <ul ref={scrollerRef} className="title-row__list">
             {result.data.map((title) => (
-              <li key={title.id} className="title-row__card">
-                <Link className="title-row__link" to={playerPath(title.id)}>
-                  {title.imageUrl ? (
-                    // Empty alt: the title name is printed right below the image.
-                    <img
-                      className="title-row__art"
-                      src={title.imageUrl}
-                      alt=""
-                      width={300}
-                      height={169}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <div
-                      className="title-row__art"
-                      style={{ backgroundImage: placeholderGradient(title.id) }}
-                    />
-                  )}
-                  <p className="title-row__name">{title.name}</p>
-                </Link>
+              <li key={`${title.mediaType ?? 'movie'}-${title.id}`} className="title-row__card">
+                <TitleCard title={title} />
               </li>
             ))}
           </ul>

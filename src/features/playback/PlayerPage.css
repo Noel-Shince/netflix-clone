@@ -146,6 +146,10 @@
   font-size: 0.875rem;
 }
 
+.player__info-actions {
+  margin-top: 12px;
+}
+
 .player__synopsis {
   margin-top: 12px;
   max-width: 70ch;
@@ -185,4 +189,10 @@
     width: min(100% - 128px, (100vh - 32px) * 16 / 9);
     width: min(100% - 128px, (100dvh - 32px) * 16 / 9);
   }
+}
+
+/* "More Like This" (slice 09): the row brings its own page gutter, so cancel
+   the player's padding to line it up with the home page rows. */
+.player__more {
+  margin-inline: calc(-1 * var(--page-gutter));
 }

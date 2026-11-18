@@ -1,27 +1,95 @@
 /**
  * Top navigation bar shared by logged-in pages.
  *
- * Transparent over the hero, solid once the page scrolls. Only "Home" routes
- * anywhere in v1; the other links and icons are visual (search, notifications,
- * profiles and My List are out of scope — PRD §4).
+ * Transparent over the hero, solid once the page scrolls. Every link routes to
+ * a browse page (slice 12); below 1100px they collapse into a "Browse" menu.
+ * The search box opens from the search icon; the bell opens NotificationsMenu.
+ *
+ * Search: a persistent rounded search box (always visible, not an icon you
+ * open), styled after Netflix's own navbar. Typing updates `/search?q=` after
+ * a short pause (search as you type). While on the results page each change
+ * replaces the history entry, so Back leaves search in one step instead of
+ * one character at a time. Clearing the box or pressing Escape leaves search.
  *
  * The account menu opens on click / tap (and on hover with a mouse), so it
  * works on touch screens, where buttons do not take focus on tap (slice 07).
  *
  * Sign out only calls Firebase; the route guard then sends the user to /login,
  * so this shared component needs no knowledge of the auth feature (ADR-2).
+ *
+ * The account menu shows the active profile's avatar and lets the user switch
+ * to another profile or manage them (slice 11). Profile state comes from
+ * lib/profileContext.ts, not from the profiles feature, for the same reason.
  */
-import { useEffect, useId, useRef, useState } from 'react';
-import { NavLink } from 'react-router';
+import { useCallback, useEffect, useId, useRef, useState, type RefObject } from 'react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router';
 import { logOut } from '../../lib/firebase.ts';
+import { useProfiles } from '../../lib/profileContext.ts';
+import { ROUTES, SEARCH_PARAM, SEARCH_PATH, searchPath } from '../../lib/routes.ts';
 import { Logo } from '../Logo/Logo.tsx';
-import { BellIcon, CaretDownIcon, SearchIcon } from '../icons/Icons.tsx';
+import { ProfileAvatar } from '../ProfileAvatar/ProfileAvatar.tsx';
+import { CaretDownIcon, CloseIcon, SearchIcon } from '../icons/Icons.tsx';
+import { NotificationsMenu } from './NotificationsMenu.tsx';
+import { useDismiss } from './useDismiss.ts';
 import './Navbar.css';
 
-const VISUAL_ONLY_LINKS = ['TV Shows', 'Movies', 'New & Popular', 'My List', 'Browse by Languages'];
+const NAV_LINKS = [
+  { to: ROUTES.home, label: 'Home' },
+  { to: ROUTES.tvShows, label: 'Shows' },
+  { to: ROUTES.movies, label: 'Movies' },
+  { to: ROUTES.newAndPopular, label: 'New & Popular' },
+  { to: ROUTES.myList, label: 'My List' },
+  { to: ROUTES.languages, label: 'Browse by Languages' },
+];
+
+/** Phone / tablet replacement for the link list: one "Browse" button and a dropdown. */
+function BrowseMenu() {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
+  const close = useCallback(() => setOpen(false), []);
+  useDismiss(open, close, containerRef, buttonRef);
+  const { pathname } = useLocation();
+  const current = NAV_LINKS.find((link) => link.to === pathname)?.label ?? 'Browse';
+
+  return (
+    <div
+      ref={containerRef}
+      className={`navbar__menu navbar__browse${open ? ' navbar__menu--open' : ''}`}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+      }}
+    >
+      <button
+        ref={buttonRef}
+        type="button"
+        className="navbar__browse-button"
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-controls={menuId}
+        onClick={() => setOpen(!open)}
+      >
+        {current} <CaretDownIcon className="navbar__caret" />
+      </button>
+      <ul id={menuId} className="navbar__popup navbar__browse-popup">
+        {NAV_LINKS.map((link) => (
+          <li key={link.to}>
+            <NavLink to={link.to} end className="navbar__browse-link" onClick={close}>
+              {link.label}
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 /** Scroll distance (px) after which the bar switches to its solid background. */
 const SOLID_AFTER_PX = 80;
+
+/** Pause in typing (ms) before the results page updates. */
+const SEARCH_DEBOUNCE_MS = 300;
 
 export function Navbar() {
   const [isSolid, setIsSolid] = useState(false);
@@ -29,6 +97,11 @@ export function Navbar() {
   const profileRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const menuId = useId();
+  const navigate = useNavigate();
+  const { profiles, activeProfile, selectProfile } = useProfiles();
+  const otherProfiles = profiles.filter((profile) => profile.id !== activeProfile?.id);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const search = useSearchBox(searchInputRef);
 
   useEffect(() => {
     const onScroll = () => setIsSolid(window.scrollY > SOLID_AFTER_PX);
@@ -63,27 +136,56 @@ export function Navbar() {
           <Logo />
         </NavLink>
         <ul className="navbar__links">
-          <li>
-            <NavLink to="/" end className="navbar__link">
-              Home
-            </NavLink>
-          </li>
-          {VISUAL_ONLY_LINKS.map((label) => (
-            <li key={label}>
-              <span className="navbar__link navbar__link--inert">{label}</span>
+          {NAV_LINKS.map((link) => (
+            <li key={link.to}>
+              <NavLink to={link.to} end className="navbar__link">
+                {link.label}
+              </NavLink>
             </li>
           ))}
         </ul>
+        <BrowseMenu />
       </nav>
 
       <div className="navbar__right">
-        <button type="button" className="navbar__icon-button" aria-label="Search">
-          <SearchIcon />
-        </button>
+        <form
+          role="search"
+          className="navbar__search"
+          onSubmit={(event) => {
+            event.preventDefault();
+            search.submit();
+          }}
+        >
+          <SearchIcon className="navbar__search-icon" aria-hidden="true" />
+          <input
+            ref={searchInputRef}
+            className="navbar__search-input"
+            type="search"
+            placeholder="Titles"
+            aria-label="Search movies by title"
+            autoComplete="off"
+            enterKeyHint="search"
+            value={search.query}
+            onChange={(event) => search.setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') search.clear();
+            }}
+          />
+          {search.query && (
+            <button
+              type="button"
+              className="navbar__icon-button navbar__search-clear"
+              aria-label="Clear search"
+              // Keep focus in the input so clicking Clear doesn't blur it first.
+              onPointerDown={(event) => event.preventDefault()}
+              onClick={search.clear}
+            >
+              <CloseIcon />
+            </button>
+          )}
+        </form>
         <span className="navbar__kids">Children</span>
-        <button type="button" className="navbar__icon-button" aria-label="Notifications">
-          <BellIcon />
-        </button>
+        <NotificationsMenu />
 
         <div
           ref={profileRef}
@@ -97,28 +199,123 @@ export function Navbar() {
             ref={menuButtonRef}
             type="button"
             className="navbar__profile-button"
-            aria-label="Account menu"
+            aria-label={activeProfile ? `Account menu, ${activeProfile.name}` : 'Account menu'}
             aria-haspopup="true"
             aria-expanded={menuOpen}
             aria-controls={menuId}
             onClick={() => setMenuOpen((open) => !open)}
           >
-            <span className="navbar__avatar" aria-hidden="true" />
+            {activeProfile ? (
+              <ProfileAvatar avatar={activeProfile.avatar} size={32} className="navbar__avatar" />
+            ) : (
+              <span className="navbar__avatar navbar__avatar--empty" aria-hidden="true" />
+            )}
             <CaretDownIcon className="navbar__caret" />
           </button>
           <div id={menuId} className="navbar__dropdown">
-            <button
-              type="button"
-              className="navbar__dropdown-item"
-              onClick={() => {
-                logOut().catch((error: unknown) => console.error('Sign out failed', error));
-              }}
-            >
-              Sign out
-            </button>
+            <div className="navbar__dropdown-panel">
+              {otherProfiles.map((profile) => (
+                <button
+                  key={profile.id}
+                  type="button"
+                  className="navbar__dropdown-item navbar__dropdown-item--profile"
+                  aria-label={`Switch to ${profile.name}`}
+                  onClick={() => {
+                    selectProfile(profile.id);
+                    setMenuOpen(false);
+                    navigate('/');
+                  }}
+                >
+                  <ProfileAvatar avatar={profile.avatar} size={28} />
+                  <span className="navbar__dropdown-name">{profile.name}</span>
+                </button>
+              ))}
+              <Link
+                to="/profiles/manage"
+                className="navbar__dropdown-item"
+                onClick={() => setMenuOpen(false)}
+              >
+                Manage profiles
+              </Link>
+              <button
+                type="button"
+                className="navbar__dropdown-item navbar__dropdown-item--signout"
+                onClick={() => {
+                  logOut().catch((error: unknown) => console.error('Sign out failed', error));
+                }}
+              >
+                Sign out
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </header>
   );
+}
+
+/**
+ * State for the navbar's persistent search box, kept in step with the URL:
+ * the URL is the source of truth for what the results page shows, the box is
+ * what the user is typing right now.
+ */
+function useSearchBox(inputRef: RefObject<HTMLInputElement | null>) {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const onSearchPage = location.pathname === SEARCH_PATH;
+  const urlQuery = onSearchPage
+    ? (new URLSearchParams(location.search).get(SEARCH_PARAM) ?? '').trim()
+    : '';
+
+  const [query, setQuery] = useState(urlQuery);
+
+  // When the URL changes under us (Back / Forward, the Home link, or leaving
+  // the results page another way), adopt it. Adjusting state during render,
+  // not in an effect, avoids a stale frame.
+  const urlKey = `${onSearchPage}|${urlQuery}`;
+  const [seenUrlKey, setSeenUrlKey] = useState(urlKey);
+  if (urlKey !== seenUrlKey) {
+    setSeenUrlKey(urlKey);
+    if (urlQuery !== query.trim()) setQuery(onSearchPage ? urlQuery : '');
+  }
+
+  const leaveSearch = () => {
+    if (!onSearchPage) return;
+    // Back to wherever search started from, if that was inside the app;
+    // a results page opened directly (shared link, reload) goes home instead.
+    if (location.key !== 'default') navigate(-1);
+    else navigate('/', { replace: true });
+  };
+
+  const goTo = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      leaveSearch();
+      return;
+    }
+    if (onSearchPage && trimmed === urlQuery) return;
+    navigate(searchPath(trimmed), { replace: onSearchPage });
+  };
+
+  // Search as you type, once typing pauses.
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed === urlQuery) return;
+    if (!trimmed && !onSearchPage) return;
+    const timer = setTimeout(() => goTo(query), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+    // goTo is rebuilt every render; these are the values it reads.
+  }, [query, urlQuery, onSearchPage]); // oxlint-disable-line react-hooks/exhaustive-deps
+
+  return {
+    query,
+    setQuery,
+    submit: () => goTo(query),
+    clear: () => {
+      setQuery('');
+      if (onSearchPage) leaveSearch();
+      else inputRef.current?.focus();
+    },
+  };
 }

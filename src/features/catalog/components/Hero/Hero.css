@@ -1,12 +1,20 @@
 .hero {
+  padding-top: 96px;
+}
+
+/* Inset, rounded banner (Netflix's current web layout) instead of full bleed. */
+.hero__card {
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  min-height: min(100vh, 56.25vw + 200px);
-  min-height: min(100svh, 56.25vw + 200px);
-  padding-top: 120px;
+  min-height: min(78vh, (100vw - 2 * var(--page-gutter)) * 9 / 16);
+  min-height: min(78svh, (100vw - 2 * var(--page-gutter)) * 9 / 16);
+  margin: 0 var(--page-gutter);
+  padding: 32px 0 clamp(24px, 4vw, 56px);
+  border-radius: clamp(10px, 1.2vw, 16px);
   overflow: hidden;
+  background-color: var(--color-surface);
 }
 
 .hero__backdrop {
@@ -22,14 +30,14 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(0deg, var(--color-bg) 0%, transparent 45%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.55) 0%, transparent 40%),
     linear-gradient(90deg, rgba(0, 0, 0, 0.7) 0%, transparent 60%);
 }
 
 .hero__caption {
   position: relative;
   max-width: min(600px, 100%);
-  padding: 0 var(--page-gutter);
+  padding: 0 clamp(16px, 3vw, 48px);
 }
 
 .hero__title {
@@ -40,8 +48,24 @@
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
 }
 
+.hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: clamp(0.875rem, 1.2vw, 1.0625rem);
+  font-weight: 600;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+}
+
+.hero__meta span + span::before {
+  content: '•';
+  margin-right: 8px;
+  color: var(--color-text-muted);
+}
+
 .hero__synopsis {
-  margin-top: 16px;
+  margin-top: 12px;
   font-size: clamp(0.9rem, 1.4vw, 1.125rem);
   line-height: 1.45;
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
@@ -64,10 +88,10 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 22px;
+  padding: 10px 26px;
   border: 0;
-  border-radius: 4px;
-  font-size: 1rem;
+  border-radius: 999px;
+  font-size: 1.0625rem;
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
@@ -83,17 +107,17 @@
 }
 
 .hero__button--info {
-  background: rgba(109, 109, 110, 0.7);
+  background: rgba(255, 255, 255, 0.2);
   color: var(--color-text);
+  backdrop-filter: blur(8px);
 }
 
 .hero__button--info:hover {
-  background: rgba(109, 109, 110, 0.5);
+  background: rgba(255, 255, 255, 0.3);
 }
 
-.hero__row {
-  position: relative;
-  margin-top: clamp(0px, 4vw, 40px);
+.hero__button--info[aria-pressed='true'] {
+  background: rgba(255, 255, 255, 0.32);
 }
 
 .hero__skeleton-title {
@@ -127,7 +151,11 @@
 /* Phones in landscape: keep the title, synopsis and Play button on one screen. */
 @media (max-height: 500px) and (orientation: landscape) {
   .hero {
-    padding-top: 80px;
+    padding-top: 72px;
+  }
+
+  .hero__card {
+    min-height: calc(100svh - 96px);
   }
 
   .hero__caption {
