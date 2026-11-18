@@ -1,5 +1,5 @@
 /**
- * Profile state shared through React context (slice 09).
+ * Profile state shared through React context (slice 11).
  *
  * Lives in lib/, not in features/profiles, because the shared Navbar (avatar,
  * profile switcher) and other features (per-profile data such as My List)

@@ -1,5 +1,5 @@
 /**
- * `/profiles/new` and `/profiles/:profileId/edit` (slice 09): name, avatar,
+ * `/profiles/new` and `/profiles/:profileId/edit` (slice 11): name, avatar,
  * and (when editing) delete.
  */
 import { useState } from 'react';

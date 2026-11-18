@@ -1,5 +1,6 @@
 /**
- * One horizontally scrolling row of title cards.
+ * One horizontally scrolling row of title cards. Shared by the home page and
+ * the player's "More Like This" row, so it lives in components/.
  *
  * Renders all three states of its row's request: skeleton cards while
  * loading, a message with Retry on failure, and the cards once loaded. Each
@@ -11,13 +12,20 @@
  */
 import { useRef } from 'react';
 import { Link } from 'react-router';
-import { ChevronLeftIcon, ChevronRightIcon } from '../../../../components/icons/Icons.tsx';
-import { placeholderGradient } from '../../../../lib/placeholderArt.ts';
-import { playerPath } from '../../../../lib/routes.ts';
-import { tmdbErrorMessage } from '../../../../lib/tmdb.ts';
-import type { AsyncResult } from '../../../../lib/useAsync.ts';
-import type { CatalogTitle } from '../../types.ts';
+import { ChevronLeftIcon, ChevronRightIcon } from '../icons/Icons.tsx';
+import { placeholderGradient } from '../../lib/placeholderArt.ts';
+import { playerPath } from '../../lib/routes.ts';
+import { tmdbErrorMessage } from '../../lib/tmdb.ts';
+import type { AsyncResult } from '../../lib/useAsync.ts';
 import './TitleRow.css';
+
+/** What a card needs. Features map their own data onto this shape. */
+export interface RowTitle {
+  id: number;
+  name: string;
+  /** Full image URL, or null when there is no artwork (card shows a placeholder). */
+  imageUrl: string | null;
+}
 
 const SKELETON_CARDS = 8;
 
@@ -25,7 +33,7 @@ interface TitleRowProps {
   /** Stable key, used for the heading id. */
   id: string;
   heading: string;
-  result: AsyncResult<CatalogTitle[]>;
+  result: AsyncResult<RowTitle[]>;
   onRetry: () => void;
 }
 

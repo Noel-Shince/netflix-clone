@@ -1,9 +1,9 @@
-# 09 — Multiple profiles
+# 11 — Multiple profiles
 
 **Goal:** one account can hold up to five viewing profiles. After signing in, the user picks who is
 watching, and can add, rename, re-avatar, delete and switch profiles.
 
-First slice after v1. Owner request, 2026-11-18. Data model and SDK choice: ADR-11.
+Owner request, 2026-11-18. Data model and SDK choice: ADR-11.
 
 ## Acceptance criteria
 
@@ -24,12 +24,15 @@ First slice after v1. Owner request, 2026-11-18. Data model and SDK choice: ADR-
 - [x] Firestore security rules: only the account owner can read or write its profiles; writes are
       validated (slot id, field names, name length, avatar id).
 - [x] A failed profile load shows a message with Retry and Sign out instead of a blank page.
+- [x] Watch history and the recommendation rows built from it (slice 09) are per profile:
+      switching profile remounts the page and shows that profile's rows. Deleting a profile
+      deletes its history, since slots are reused.
 - [x] Works at phone width (375px) and with the keyboard (avatar picker is a radio group).
 
 ## Out of scope for this slice
 
-- Per-profile data (My List, watch history, recommendations). The data model leaves room for it
-  under each profile document; the My List slice wires it in.
+- My List per profile: the My List slice (10) wires it in under each profile document.
+- Moving watch history from localStorage to Firestore (it stays per browser for now).
 - Kids profiles / maturity filtering, profile PINs, custom avatar uploads.
 - Cascading deletes: Firestore does not delete subcollections with their parent, so once profiles
   own data, that feature must delete its own documents when a profile is deleted (noted in
@@ -47,7 +50,10 @@ First slice after v1. Owner request, 2026-11-18. Data model and SDK choice: ADR-
   ADR-2); provider, guard and screens in `src/features/profiles/`. `App` passes the signed-in
   account to the provider, because features may not import each other.
 - **Remembered choice:** localStorage key `noelflix.activeProfile.<uid>`. Not a security
-  boundary; it only decides whether to show the picker.
+  boundary; it decides whether to show the picker, and `watchHistory.ts` reads it to pick the
+  history key (`noelflix:watch-history:<uid>:<slot>`). History recorded before this slice, under
+  the old per-account key, is no longer shown. Two tabs on different profiles share the most
+  recent pick for history writes.
 
 ## One-time setup (owner)
 

@@ -36,7 +36,7 @@ You need your own:
 - **TMDB API Read Access Token** — free at [themoviedb.org](https://www.themoviedb.org/settings/api).
 - **Firebase project** with a Web app, Email/Password sign-in enabled, and a Firestore database
   with the rules in `firestore.rules` published (see
-  [slice 09 setup](docs/slices/09-profiles.md#one-time-setup-owner)).
+  [slice 11 setup](docs/slices/11-profiles.md#one-time-setup-owner)).
 
 To develop without touching a real project, set `VITE_USE_FIREBASE_EMULATORS=true` in
 `.env.local` and run `npx firebase-tools emulators:start --only auth,firestore` (needs Java)
@@ -104,7 +104,7 @@ Each slice has a spec in [docs/slices/](docs/slices/) and landed as one PR.
 - [x] 06 [Login loading state](docs/slices/06-loading-animation.md)
 - [x] 07 [Responsive pass](docs/slices/07-responsive-styling.md)
 - [x] 08 [Deploy to Firebase Hosting](docs/slices/08-deploy.md)
-- [x] 09 [Multiple profiles](docs/slices/09-profiles.md)
+- [x] 11 [Multiple profiles](docs/slices/11-profiles.md)
 
 Possible follow-ups, not planned: a Cloud Function proxy to keep the TMDB token out of the
 bundle (ADR-4), route-level code splitting, PR preview deploys, automated end-to-end tests.

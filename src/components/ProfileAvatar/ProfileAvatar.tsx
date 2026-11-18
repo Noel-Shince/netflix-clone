@@ -1,5 +1,5 @@
 /**
- * Profile picture: a coloured square with a simple drawn face (slice 09).
+ * Profile picture: a coloured square with a simple drawn face (slice 11).
  *
  * Inline SVG from the fixed set in lib/profiles.ts, so there are no image
  * files, no uploads and no copyrighted artwork. Decorative: the surrounding

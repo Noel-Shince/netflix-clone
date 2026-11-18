@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Firestore security rules (slice 09). Deploy with:
+// Firestore security rules (slice 11). Deploy with:
 //   npx firebase-tools deploy --only firestore:rules
 // or paste this file into Firebase console > Firestore Database > Rules.
 //

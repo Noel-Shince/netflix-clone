@@ -12,7 +12,7 @@
  * so this shared component needs no knowledge of the auth feature (ADR-2).
  *
  * The account menu shows the active profile's avatar and lets the user switch
- * to another profile or manage them (slice 09). Profile state comes from
+ * to another profile or manage them (slice 11). Profile state comes from
  * lib/profileContext.ts, not from the profiles feature, for the same reason.
  */
 import { useEffect, useId, useRef, useState } from 'react';

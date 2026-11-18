@@ -26,5 +26,7 @@ export function RequireProfile() {
     };
     return <Navigate to="/profiles" replace state={state} />;
   }
-  return <Outlet />;
+  // Keyed by profile, so switching profiles remounts the page and anything it
+  // read for the previous profile (e.g. recommendation rows) is read again.
+  return <Outlet key={activeProfile.id} />;
 }

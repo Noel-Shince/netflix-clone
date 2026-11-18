@@ -199,7 +199,7 @@ public/            Static files served as-is (favicon)
 ## ADR-11: Firestore (lite SDK) for profiles and per-user data
 
 - **Decision:** add Cloud Firestore, accessed through the **lite** SDK
-  (`firebase/firestore/lite`), for viewing profiles (slice 09) and later per-profile data. `db` is
+  (`firebase/firestore/lite`), for viewing profiles (slice 11) and later per-profile data. `db` is
   created in `src/lib/firebase.ts`; each data area gets its own module in `lib/` (`profiles.ts`).
   Security rules live in `firestore.rules` at the repo root. Supersedes ADR-10's "no Firestore".
 - **Data shape:** `users/{uid}/profiles/{slot}`, slot ids `p1`–`p5`, so the rules can cap an

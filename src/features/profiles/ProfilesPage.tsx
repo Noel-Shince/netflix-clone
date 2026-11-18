@@ -1,5 +1,5 @@
 /**
- * `/profiles` ("Who's watching?") and `/profiles/manage` (slice 09).
+ * `/profiles` ("Who's watching?") and `/profiles/manage` (slice 11).
  *
  * Both show the same grid. Picking a profile makes it active and continues to
  * the page the user originally asked for; in manage mode each tile opens its

@@ -1,5 +1,5 @@
 /**
- * Viewing profiles: data model and Firestore access (slice 09).
+ * Viewing profiles: data model and Firestore access (slice 11).
  *
  * Each account has up to five profiles at `users/{uid}/profiles/{slot}`, where
  * the document id is a fixed slot id ("p1"–"p5"). Fixed ids let the security
@@ -59,6 +59,31 @@ function isProfileSlot(id: string): id is ProfileSlot {
 
 function profilesCollection(uid: string) {
   return collection(db, 'users', uid, 'profiles');
+}
+
+const activeProfileKey = (uid: string) => `noelflix.activeProfile.${uid}`;
+
+/**
+ * The profile last chosen on this browser for `uid`, or null. Kept in
+ * localStorage so a reload or new tab skips the picker; also read by
+ * modules that scope local data per profile (watchHistory.ts). Storage can
+ * throw (private mode, blocked storage); the picker then just shows more often.
+ */
+export function getStoredActiveProfileId(uid: string): string | null {
+  try {
+    return localStorage.getItem(activeProfileKey(uid));
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredActiveProfileId(uid: string, id: string | null): void {
+  try {
+    if (id) localStorage.setItem(activeProfileKey(uid), id);
+    else localStorage.removeItem(activeProfileKey(uid));
+  } catch {
+    // See getStoredActiveProfileId.
+  }
 }
 
 /** Reads the account's profiles, oldest first. (The lite SDK always reads from the server.) */

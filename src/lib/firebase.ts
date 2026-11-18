@@ -4,7 +4,7 @@
  * Initialises the app once from the VITE_FIREBASE_* variables (ADR-4) and
  * exposes the handful of auth operations the app needs as plain functions, so
  * components never touch `firebase/*` and swapping the provider stays a
- * one-file change. Added in slice 05. Slice 09 adds Firestore (`db`, lite SDK,
+ * one-file change. Added in slice 05. Slice 11 adds Firestore (`db`, lite SDK,
  * ADR-11); its queries live in modules under lib/ (e.g. profiles.ts).
  */
 import { FirebaseError, initializeApp } from 'firebase/app';
@@ -85,6 +85,14 @@ export function logOut(): Promise<void> {
  */
 export function subscribeToAuth(listener: (user: AuthUser | null) => void): () => void {
   return onAuthStateChanged(auth, listener);
+}
+
+/**
+ * The signed-in user's id, or null. Safe to call synchronously on pages behind
+ * `RequireAuth`, which only render once Firebase has restored the session.
+ */
+export function currentUserId(): string | null {
+  return auth.currentUser?.uid ?? null;
 }
 
 /** The Firebase error code (e.g. "auth/invalid-credential"), or null for non-Firebase errors. */

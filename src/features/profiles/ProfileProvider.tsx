@@ -1,6 +1,6 @@
 /**
  * Loads the signed-in account's profiles and tracks which one is watching
- * (slice 09). Mounted once in App, inside AuthProvider.
+ * (slice 11). Mounted once in App, inside AuthProvider.
  *
  * - First visit (no profiles yet): creates one named after the account, so
  *   every account always has at least one profile.
@@ -18,13 +18,16 @@ import {
   createProfile as createProfileDoc,
   defaultProfileName,
   deleteProfile as deleteProfileDoc,
+  getStoredActiveProfileId,
   listProfiles,
   profileErrorMessage,
+  setStoredActiveProfileId,
   updateProfile as updateProfileDoc,
   type Profile,
   type ProfileInput,
   type ProfileSlot,
 } from '../../lib/profiles.ts';
+import { clearWatchHistory } from '../../lib/watchHistory.ts';
 
 interface ProfileProviderProps {
   /** The signed-in account, or null while signed out or while sign-up is finishing. */
@@ -33,27 +36,6 @@ interface ProfileProviderProps {
 }
 
 const NO_PROFILES: Profile[] = [];
-
-const storageKey = (uid: string) => `noelflix.activeProfile.${uid}`;
-
-// localStorage can throw (private mode, blocked storage); the picker then just
-// shows more often, which is harmless.
-function readStoredProfile(uid: string): string | null {
-  try {
-    return localStorage.getItem(storageKey(uid));
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredProfile(uid: string, id: string | null) {
-  try {
-    if (id) localStorage.setItem(storageKey(uid), id);
-    else localStorage.removeItem(storageKey(uid));
-  } catch {
-    // See readStoredProfile.
-  }
-}
 
 interface LoadState {
   /** Which load (`uid:reloadKey`) this result belongs to; a stale key means "loading". */
@@ -78,7 +60,7 @@ export function ProfileProvider({ account, children }: ProfileProviderProps) {
     setChosenForUid(uid);
     setChosen(null);
   }
-  const activeId = !uid ? null : chosen?.uid === uid ? chosen.id : readStoredProfile(uid);
+  const activeId = !uid ? null : chosen?.uid === uid ? chosen.id : getStoredActiveProfileId(uid);
 
   // The name for a first-visit profile is read when loading starts, not as an
   // effect dependency: it must not re-trigger a load.
@@ -91,7 +73,7 @@ export function ProfileProvider({ account, children }: ProfileProviderProps) {
   const previousUid = useRef<string | null>(null);
   useEffect(() => {
     if (previousUid.current && previousUid.current !== uid) {
-      writeStoredProfile(previousUid.current, null);
+      setStoredActiveProfileId(previousUid.current, null);
     }
     previousUid.current = uid;
   }, [uid]);
@@ -130,7 +112,7 @@ export function ProfileProvider({ account, children }: ProfileProviderProps) {
   const selectProfile = useCallback(
     (id: ProfileSlot) => {
       if (!uid) return;
-      writeStoredProfile(uid, id);
+      setStoredActiveProfileId(uid, id);
       setChosen({ uid, id });
     },
     [uid],
@@ -138,7 +120,7 @@ export function ProfileProvider({ account, children }: ProfileProviderProps) {
 
   const clearActiveProfile = useCallback(() => {
     if (!uid) return;
-    writeStoredProfile(uid, null);
+    setStoredActiveProfileId(uid, null);
     setChosen({ uid, id: null });
   }, [uid]);
 
@@ -175,6 +157,7 @@ export function ProfileProvider({ account, children }: ProfileProviderProps) {
       if (!uid) throw new Error('Not signed in.');
       if (profiles.length <= 1) throw new Error('An account needs at least one profile.');
       await deleteProfileDoc(uid, id);
+      clearWatchHistory(uid, id);
       editProfiles((list) => list.filter((p) => p.id !== id));
       if (activeId === id) clearActiveProfile();
     },

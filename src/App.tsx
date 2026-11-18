@@ -2,7 +2,7 @@
  * Root component: auth and profile providers, and the route table.
  *
  * `/` and `/player/:id` need a signed-in user (slice 05) and a chosen profile
- * (slice 09); the profile screens need only a signed-in user; `/login` is for
+ * (slice 11); the profile screens need only a signed-in user; `/login` is for
  * logged-out users only. Each rule is a layout route, so adding a protected
  * page is just nesting it in the right group.
  */
