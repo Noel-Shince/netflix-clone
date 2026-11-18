@@ -57,23 +57,30 @@ export async function fetchTitleRow(source: TitleSource): Promise<CatalogTitle[]
 }
 
 /**
- * The hero title: the first title in `source` that has both artwork and a
- * synopsis, so the banner never renders half-empty.
+ * Hero candidates: up to `count` titles in `source` that have both artwork
+ * and a synopsis, so the banner never renders half-empty. The hero rotates
+ * through these (see `useRotation`) instead of showing one title forever.
  */
-export async function fetchFeaturedTitle(source: TitleSource): Promise<FeaturedTitle> {
+export async function fetchFeaturedTitles(
+  source: TitleSource,
+  count: number,
+): Promise<FeaturedTitle[]> {
   const list = await tmdbGet<TmdbList>(source.path, source.params);
+  const titles: FeaturedTitle[] = [];
   for (const item of list.results) {
+    if (titles.length >= count) break;
     const mediaType = itemMediaType(item, source);
     if (mediaType && item.backdrop_path && item.overview.trim()) {
-      return {
+      titles.push({
         ...toTitle(item, mediaType),
         synopsis: item.overview,
         backdropUrl: tmdbImageUrl(item.backdrop_path, 'w1280'),
         year: (item.release_date || item.first_air_date)?.slice(0, 4) || null,
-      };
+      });
     }
   }
-  throw new Error('TMDB returned no title with artwork for the banner.');
+  if (titles.length === 0) throw new Error('TMDB returned no title with artwork for the banner.');
+  return titles;
 }
 
 /**

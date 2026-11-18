@@ -9,7 +9,7 @@ import { fetchPicksFor, fetchRelatedTitles } from '../../lib/recommendations.ts'
 import type { WatchedTitle } from '../../lib/watchHistory.ts';
 import type { RowTitle } from '../../components/TitleRow/TitleRow.tsx';
 import type { BrowsePageConfig } from './BrowsePage.tsx';
-import { fetchFeaturedTitle, fetchTitleRow, type TitleSource } from './api/catalogApi.ts';
+import { fetchFeaturedTitles, fetchTitleRow, type TitleSource } from './api/catalogApi.ts';
 
 export interface RowConfig {
   id: string;
@@ -33,8 +33,11 @@ const tv = (path: string, params?: Record<string, string>): TitleSource => ({
 });
 const mixed = (path: string): TitleSource => ({ path, mediaType: 'mixed' });
 
+/** How many candidates the hero rotates through (see `useRotation`). */
+const FEATURED_COUNT = 5;
+
 function featured(source: TitleSource) {
-  return () => fetchFeaturedTitle(source);
+  return () => fetchFeaturedTitles(source, FEATURED_COUNT);
 }
 
 /**
@@ -62,7 +65,7 @@ function personalRows(history: WatchedTitle[]): RowConfig[] {
 }
 
 export const HOME_PAGE: BrowsePageConfig = {
-  loadFeatured: featured(movie('/trending/movie/day')),
+  loadFeaturedTitles: featured(movie('/trending/movie/day')),
   personalRows,
   heroRow: row('popular', 'Popular on Noelflix', movie('/movie/popular')),
   rows: [
@@ -74,7 +77,7 @@ export const HOME_PAGE: BrowsePageConfig = {
 };
 
 export const TV_SHOWS_PAGE: BrowsePageConfig = {
-  loadFeatured: featured(tv('/trending/tv/day')),
+  loadFeaturedTitles: featured(tv('/trending/tv/day')),
   heroRow: row('tv-popular', 'Popular TV Shows', tv('/tv/popular')),
   rows: [
     row('tv-trending', 'Trending This Week', tv('/trending/tv/week')),
@@ -85,7 +88,7 @@ export const TV_SHOWS_PAGE: BrowsePageConfig = {
 };
 
 export const MOVIES_PAGE: BrowsePageConfig = {
-  loadFeatured: featured(movie('/movie/now_playing')),
+  loadFeaturedTitles: featured(movie('/movie/now_playing')),
   heroRow: row('movies-popular', 'Popular Movies', movie('/movie/popular')),
   rows: [
     row('movies-top-rated', 'Top Rated', movie('/movie/top_rated')),
@@ -97,7 +100,7 @@ export const MOVIES_PAGE: BrowsePageConfig = {
 };
 
 export const NEW_AND_POPULAR_PAGE: BrowsePageConfig = {
-  loadFeatured: featured(mixed('/trending/all/day')),
+  loadFeaturedTitles: featured(mixed('/trending/all/day')),
   heroRow: row('new-trending-today', 'Trending Today', mixed('/trending/all/day')),
   rows: [
     row('new-trending-week', 'Trending This Week', mixed('/trending/all/week')),

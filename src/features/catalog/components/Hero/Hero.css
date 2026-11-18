@@ -22,6 +22,26 @@
   inset: 0;
   background-position: center;
   background-size: cover;
+  animation: hero-fade-in 1s ease both;
+}
+
+/* The caption text fades with its own timing so it never looks like it
+   waits on the (usually heavier) backdrop image. */
+.hero__fade {
+  animation: hero-fade-in 0.6s ease both;
+}
+
+@keyframes hero-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__backdrop,
+  .hero__fade {
+    animation: none;
+  }
 }
 
 /* Fades the art into the page and keeps the caption readable on any image. */
