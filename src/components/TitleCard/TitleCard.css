@@ -1,3 +1,7 @@
+.title-card-wrap {
+  position: relative;
+}
+
 .title-card {
   display: block;
   color: inherit;
@@ -8,7 +12,7 @@
   width: 100%;
   height: auto;
   aspect-ratio: 16 / 9;
-  border-radius: 4px;
+  border-radius: 8px;
   background-color: var(--color-surface);
   background-position: center;
   background-size: cover;
@@ -47,4 +51,69 @@
   font-size: 0.8125rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Card actions (Play, + My List) laid over the artwork's bottom-left corner,
+   after Netflix's hover card. The overlay box matches the artwork's 16:9
+   footprint; only the buttons take clicks. Shown on hover / focus for mouse
+   and keyboard users, always on touch screens, where there is no hover. */
+.title-card__actions {
+  position: absolute;
+  inset: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  aspect-ratio: 16 / 9;
+  padding: 8px;
+  pointer-events: none;
+}
+
+.title-card__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  background: rgba(20, 20, 20, 0.75);
+  color: var(--color-text);
+  font-size: 1rem;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.title-card__action:hover {
+  border-color: var(--color-text);
+}
+
+.title-card__action--play {
+  border-color: var(--color-text);
+  background: var(--color-text);
+  color: #000;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .title-card__actions {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .title-card-wrap:hover .title-card__actions,
+  .title-card-wrap:focus-within .title-card__actions {
+    opacity: 1;
+  }
+}
+
+@media (pointer: coarse) {
+  /* Touch: tapping the card already plays, so keep just the My List button. */
+  .title-card__action--play {
+    display: none;
+  }
+
+  .title-card__action {
+    width: 44px;
+    height: 44px;
+  }
 }

@@ -27,6 +27,7 @@ import {
   type ProfileInput,
   type ProfileSlot,
 } from '../../lib/profiles.ts';
+import { clearMyList } from '../../lib/myList.ts';
 import { clearWatchHistory } from '../../lib/watchHistory.ts';
 
 interface ProfileProviderProps {
@@ -158,6 +159,11 @@ export function ProfileProvider({ account, children }: ProfileProviderProps) {
       if (profiles.length <= 1) throw new Error('An account needs at least one profile.');
       await deleteProfileDoc(uid, id);
       clearWatchHistory(uid, id);
+      // Best effort: the profile is already gone, so a failure here only
+      // leaves orphaned list docs, which the next profile in the slot would see.
+      await clearMyList(`users/${uid}/profiles/${id}`).catch((error: unknown) =>
+        console.warn('Could not clear My List for the deleted profile', error),
+      );
       editProfiles((list) => list.filter((p) => p.id !== id));
       if (activeId === id) clearActiveProfile();
     },
