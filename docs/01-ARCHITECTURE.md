@@ -221,6 +221,21 @@ public/            Static files served as-is (favicon)
 - **Cost:** +36 KB gzipped, one more service to set up (create the database, publish rules), and
   rules that must be kept in step with the TypeScript types (avatar ids, name length).
 
+## ADR-12: My List in Firestore (Lite)
+
+- **Decision:** saved titles live in Firestore at `{owner}/myList/{mediaType}-{tmdbId}`, owner
+  `users/{uid}/profiles/{slot}` (the active profile, ADR-11). `lib/myList.ts` holds the only My List Firestore
+  calls: it reads the list once per owner into a small store behind `useSyncExternalStore`, and
+  each add / remove updates that store after its write succeeds, so every "+ My List" button and
+  the My List page stay in sync. `firestore.rules` allows only the owner and validates each
+  document's fields. Added in slice 12.
+- **Lite SDK, as ADR-11:** with no live listeners, a change made on another device appears on the
+  next page load. Deleting a profile also deletes its list, since profile slots are reused.
+- **Why the shared button lives in `components/`:** the hero, title cards and the player all
+  render it, and features may not import each other (ADR-2).
+- **Cost:** the database and its rules are a one-time manual setup in the Firebase console (the
+  deploy workflow ships Hosting only).
+
 ## Conventions
 
 - Components: `PascalCase.tsx` with a sibling `PascalCase.css`.

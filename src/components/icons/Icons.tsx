@@ -147,6 +147,14 @@ export function PlusIcon(props: IconProps) {
   );
 }
 
+export function CheckIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M20 6 9 17l-5-5" />
+    </Svg>
+  );
+}
+
 export function PencilIcon(props: IconProps) {
   return (
     <Svg {...props}>

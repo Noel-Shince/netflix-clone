@@ -32,5 +32,21 @@ service cloud.firestore {
           && data.createdAt is int;
       }
     }
+
+    // My List (slice 12): one doc per saved title under the viewing profile,
+    // owner-only, with the fields checked on every write.
+    match /users/{uid}/profiles/{profileId}/myList/{titleKey} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['id', 'mediaType', 'name', 'imageUrl', 'addedAt'])
+        && request.resource.data.id is int
+        && request.resource.data.mediaType in ['movie', 'tv']
+        && titleKey == request.resource.data.mediaType + '-' + string(request.resource.data.id)
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 300
+        && (request.resource.data.imageUrl == null
+          || (request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() <= 500))
+        && request.resource.data.addedAt == request.time;
+    }
   }
 }

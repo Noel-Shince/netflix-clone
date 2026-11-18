@@ -5,7 +5,7 @@
  * exposes the handful of auth operations the app needs as plain functions, so
  * components never touch `firebase/*` and swapping the provider stays a
  * one-file change. Added in slice 05. Slice 11 adds Firestore (`db`, lite SDK,
- * ADR-11); its queries live in modules under lib/ (e.g. profiles.ts).
+ * ADR-11); its queries live in modules under lib/ (profiles.ts, myList.ts).
  */
 import { FirebaseError, initializeApp } from 'firebase/app';
 import {

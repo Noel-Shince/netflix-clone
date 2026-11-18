@@ -1,0 +1,111 @@
+.my-list {
+  min-height: 70vh;
+  padding: 100px var(--page-gutter) 48px;
+}
+
+.my-list__heading {
+  margin-bottom: 24px;
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.my-list__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 45%), 1fr));
+  gap: 24px 10px;
+  list-style: none;
+}
+
+.my-list__card {
+  position: relative;
+  min-width: 0;
+}
+
+.my-list__link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.my-list__art {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border-radius: 4px;
+  background-color: var(--color-surface);
+  background-position: center;
+  background-size: cover;
+  object-fit: cover;
+}
+
+.my-list__link:hover .my-list__art,
+.my-list__link:focus-visible .my-list__art {
+  outline: 2px solid var(--color-text);
+}
+
+.my-list__name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  overflow: hidden;
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-list__badge {
+  flex: none;
+  padding: 0 4px;
+  border: 1px solid var(--color-text-muted);
+  border-radius: 2px;
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+}
+
+.my-list__remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.my-list__remove:hover {
+  border-color: var(--color-text);
+}
+
+.my-list__remove:disabled {
+  opacity: 0.5;
+}
+
+.my-list__message {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  color: var(--color-text-muted);
+}
+
+.my-list__cta {
+  padding: 8px 20px;
+  border-radius: 4px;
+  background: var(--color-text);
+  color: #000;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (pointer: coarse) {
+  .my-list__remove {
+    width: 44px;
+    height: 44px;
+  }
+}
