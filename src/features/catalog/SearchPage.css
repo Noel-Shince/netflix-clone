@@ -17,16 +17,28 @@
   font-weight: 700;
 }
 
+.search__sections {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.search__sections--stale {
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.search__section-heading {
+  margin-bottom: 16px;
+  font-size: clamp(1.125rem, 1.8vw, 1.5rem);
+  font-weight: 700;
+}
+
 .search__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(clamp(150px, 18vw, 240px), 1fr));
   gap: 24px 10px;
   list-style: none;
-}
-
-.search__grid--stale {
-  opacity: 0.5;
-  transition: opacity 0.2s ease;
 }
 
 /* Grid items default to min-width: auto, so a long caption would widen its column. */

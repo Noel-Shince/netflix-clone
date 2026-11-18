@@ -12,6 +12,9 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit as fsLimit,
+  orderBy,
+  query,
   serverTimestamp,
   setDoc,
   writeBatch,
@@ -75,6 +78,41 @@ export function saveWatchProgress(
     completed: progress.completed,
     updatedAt: serverTimestamp(),
   }).catch((error) => console.error('Could not save watch progress', error));
+}
+
+export interface RecentlyWatched {
+  id: number;
+  mediaType: MediaType;
+  name: string;
+}
+
+/**
+ * The viewing profile's most recently played titles, newest first (the
+ * "Shows You've Watched" home row). Empty when signed out or nothing has
+ * been played yet — there is nothing honest to show otherwise.
+ */
+export async function listRecentlyWatched(max: number): Promise<RecentlyWatched[]> {
+  if (!ownerPath) return [];
+  try {
+    const snapshot = await getDocs(
+      query(collection(db, ownerPath, 'watchProgress'), orderBy('updatedAt', 'desc'), fsLimit(max)),
+    );
+    const titles: RecentlyWatched[] = [];
+    for (const entry of snapshot.docs) {
+      const data = entry.data();
+      if (typeof data.id !== 'number') continue;
+      if (data.mediaType !== 'movie' && data.mediaType !== 'tv') continue;
+      titles.push({
+        id: data.id,
+        mediaType: data.mediaType,
+        name: typeof data.name === 'string' ? data.name : '',
+      });
+    }
+    return titles;
+  } catch (error) {
+    console.error('Could not read recently watched titles', error);
+    return [];
+  }
 }
 
 /**

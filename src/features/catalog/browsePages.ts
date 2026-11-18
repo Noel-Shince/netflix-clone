@@ -7,9 +7,15 @@
  */
 import { fetchPicksFor, fetchRelatedTitles } from '../../lib/recommendations.ts';
 import type { WatchedTitle } from '../../lib/watchHistory.ts';
+import { listRecentlyWatched } from '../../lib/watchProgress.ts';
 import type { RowTitle } from '../../components/TitleRow/TitleRow.tsx';
 import type { BrowsePageConfig } from './BrowsePage.tsx';
-import { fetchFeaturedTitles, fetchTitleRow, type TitleSource } from './api/catalogApi.ts';
+import {
+  fetchFeaturedTitles,
+  fetchTitleRow,
+  fetchTitlesByRefs,
+  type TitleSource,
+} from './api/catalogApi.ts';
 
 export interface RowConfig {
   id: string;
@@ -64,15 +70,38 @@ function personalRows(history: WatchedTitle[]): RowConfig[] {
   return rows;
 }
 
+/** How many recently watched titles the home row shows. */
+const RECENTLY_WATCHED_COUNT = 20;
+
+/**
+ * "Shows You've Watched": the viewing profile's own vidsrc.sh watch
+ * progress (see lib/watchProgress.ts), newest first, with TMDB artwork
+ * looked up per title since watch progress docs don't store it. Unlike
+ * `personalRows` below, this isn't gated on history being non-empty before
+ * render — TitleRow's own empty state ("Nothing to show here right now")
+ * is an honest answer for a profile that hasn't watched anything yet.
+ */
+const watchedRow: RowConfig = {
+  id: 'watched',
+  heading: "Shows You've Watched",
+  load: async () => {
+    const recent = await listRecentlyWatched(RECENTLY_WATCHED_COUNT);
+    return recent.length === 0 ? [] : fetchTitlesByRefs(recent);
+  },
+};
+
 export const HOME_PAGE: BrowsePageConfig = {
   loadFeaturedTitles: featured(movie('/trending/movie/day')),
   personalRows,
   heroRow: row('popular', 'Popular on Noelflix', movie('/movie/popular')),
   rows: [
+    watchedRow,
     row('top-rated', 'Blockbuster Movies', movie('/movie/top_rated')),
     row('now-playing', 'Now Playing', movie('/movie/now_playing')),
     row('upcoming', 'Upcoming', movie('/movie/upcoming')),
     row('trending-week', 'Trending This Week', movie('/trending/movie/week')),
+    row('tv-popular-home', 'Popular on TV', tv('/tv/popular')),
+    row('action-adventure', 'Action & Adventure', movie('/discover/movie', { with_genres: '28' })),
   ],
 };
 
