@@ -5,8 +5,9 @@
  * work; the other links and icons are still visual only (notifications,
  * profiles and My List are out of scope — PRD §4).
  *
- * Search: the icon opens a text box, and typing updates `/search?q=` after a
- * short pause (search as you type). While on the results page each change
+ * Search: a persistent rounded search box (always visible, not an icon you
+ * open), styled after Netflix's own navbar. Typing updates `/search?q=` after
+ * a short pause (search as you type). While on the results page each change
  * replaces the history entry, so Back leaves search in one step instead of
  * one character at a time. Clearing the box or pressing Escape leaves search.
  *
@@ -99,51 +100,38 @@ export function Navbar() {
       <div className="navbar__right">
         <form
           role="search"
-          className={`navbar__search${search.open ? ' navbar__search--open' : ''}`}
+          className="navbar__search"
           onSubmit={(event) => {
             event.preventDefault();
             search.submit();
           }}
         >
-          <button
-            type="button"
-            className="navbar__icon-button navbar__search-toggle"
-            aria-label="Search"
-            aria-expanded={search.open}
-            onClick={search.openBox}
-          >
-            <SearchIcon />
-          </button>
-          {search.open && (
-            <>
-              <input
-                ref={searchInputRef}
-                className="navbar__search-input"
-                type="search"
-                placeholder="Titles"
-                aria-label="Search movies by title"
-                autoComplete="off"
-                enterKeyHint="search"
-                value={search.query}
-                onChange={(event) => search.setQuery(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape') search.clear();
-                }}
-                onBlur={search.closeIfEmpty}
-              />
-              {search.query && (
-                <button
-                  type="button"
-                  className="navbar__icon-button navbar__search-clear"
-                  aria-label="Clear search"
-                  // Keep focus in the input, so blur does not close the box first.
-                  onPointerDown={(event) => event.preventDefault()}
-                  onClick={search.clear}
-                >
-                  <CloseIcon />
-                </button>
-              )}
-            </>
+          <SearchIcon className="navbar__search-icon" aria-hidden="true" />
+          <input
+            ref={searchInputRef}
+            className="navbar__search-input"
+            type="search"
+            placeholder="Titles"
+            aria-label="Search movies by title"
+            autoComplete="off"
+            enterKeyHint="search"
+            value={search.query}
+            onChange={(event) => search.setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') search.clear();
+            }}
+          />
+          {search.query && (
+            <button
+              type="button"
+              className="navbar__icon-button navbar__search-clear"
+              aria-label="Clear search"
+              // Keep focus in the input so clicking Clear doesn't blur it first.
+              onPointerDown={(event) => event.preventDefault()}
+              onClick={search.clear}
+            >
+              <CloseIcon />
+            </button>
           )}
         </form>
         <span className="navbar__kids">Children</span>
@@ -219,9 +207,9 @@ export function Navbar() {
 }
 
 /**
- * State for the navbar search box, kept in step with the URL: the URL is the
- * source of truth for what the results page shows, the box is what the user is
- * typing right now.
+ * State for the navbar's persistent search box, kept in step with the URL:
+ * the URL is the source of truth for what the results page shows, the box is
+ * what the user is typing right now.
  */
 function useSearchBox(inputRef: RefObject<HTMLInputElement | null>) {
   const location = useLocation();
@@ -233,17 +221,15 @@ function useSearchBox(inputRef: RefObject<HTMLInputElement | null>) {
     : '';
 
   const [query, setQuery] = useState(urlQuery);
-  const [open, setOpen] = useState(onSearchPage);
 
-  // When the URL changes under us (Back / Forward, the Home link), adopt it:
-  // on the results page the box shows its query, anywhere else it closes.
-  // Adjusting state during render, not in an effect, avoids a stale frame.
+  // When the URL changes under us (Back / Forward, the Home link, or leaving
+  // the results page another way), adopt it. Adjusting state during render,
+  // not in an effect, avoids a stale frame.
   const urlKey = `${onSearchPage}|${urlQuery}`;
   const [seenUrlKey, setSeenUrlKey] = useState(urlKey);
   if (urlKey !== seenUrlKey) {
     setSeenUrlKey(urlKey);
-    if (urlQuery !== query.trim()) setQuery(urlQuery);
-    setOpen(onSearchPage);
+    if (urlQuery !== query.trim()) setQuery(onSearchPage ? urlQuery : '');
   }
 
   const leaveSearch = () => {
@@ -266,35 +252,22 @@ function useSearchBox(inputRef: RefObject<HTMLInputElement | null>) {
 
   // Search as you type, once typing pauses.
   useEffect(() => {
-    if (!open) return;
     const trimmed = query.trim();
     if (trimmed === urlQuery) return;
     if (!trimmed && !onSearchPage) return;
     const timer = setTimeout(() => goTo(query), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
     // goTo is rebuilt every render; these are the values it reads.
-  }, [open, query, urlQuery, onSearchPage]); // oxlint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (open) inputRef.current?.focus();
-  }, [open, inputRef]);
+  }, [query, urlQuery, onSearchPage]); // oxlint-disable-line react-hooks/exhaustive-deps
 
   return {
-    open,
     query,
     setQuery,
-    openBox: () => {
-      if (open) inputRef.current?.focus();
-      else setOpen(true);
-    },
     submit: () => goTo(query),
     clear: () => {
       setQuery('');
       if (onSearchPage) leaveSearch();
-      else setOpen(false);
-    },
-    closeIfEmpty: () => {
-      if (!query.trim() && !onSearchPage) setOpen(false);
+      else inputRef.current?.focus();
     },
   };
 }
