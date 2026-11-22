@@ -113,11 +113,16 @@
 }
 
 /* Matches Netflix's own watch screen while the player is about to load:
-   full-bleed black, nothing else on screen but the spinner. */
+   full-bleed black, nothing else on screen but the spinner. No hero element
+   exists yet at this point, so this state needs its own full-viewport height
+   to center the spinner in (unlike the hero and error states, which size
+   themselves). */
 .player--loading {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
   padding: 0;
 }
 
