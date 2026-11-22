@@ -3,7 +3,7 @@
 |                  |            |
 | ---------------- | ---------- |
 | **Status**       | Approved   |
-| **Last updated** | 2026-11-16 |
+| **Last updated** | 2026-11-22 |
 
 Short decision records. Each one says what was chosen, why, and what it costs.
 
@@ -29,18 +29,20 @@ merge to `main` (slice 08, ADR-8).
 ## Stack
 
 | Concern                 | Choice                                                                      | Version at scaffold |
-| ----------------------- | --------------------------------------------------------------------------- | ------------------- |
-| UI library              | React                                                                       | 19                  |
-| Build tool / dev server | Vite (`@vitejs/plugin-react`)                                               | 8                   |
-| Routing                 | React Router (`react-router`, added in slice 01)                            | 8                   |
-| Auth                    | Firebase Authentication, email/password (slice 05)                          | —                   |
-| Movie data              | TMDB API v3 endpoints, v4 bearer token (slice 03)                           | —                   |
-| Styling                 | Plain CSS, one file per component, global tokens in `src/styles/global.css` | —                   |
-| Lint                    | oxlint (Vite's current template default) with React rules                   | 1.x                 |
-| Format                  | Prettier                                                                    | 3.x                 |
-| CI / CD                 | GitHub Actions: lint, format check, type-check, build; deploy on `main`     | —                   |
-| Language                | TypeScript, strict mode                                                     | 7.x                 |
-| Hosting                 | Firebase Hosting (slice 08)                                                 | —                   |
+| ----------------------- | --------------------------------------------------------------------------- | -------------------- |
+| UI library              | React                                                                       | 19                   |
+| Build tool / dev server | Vite (`@vitejs/plugin-react`)                                               | 8                    |
+| Routing                 | React Router (`react-router`, added in slice 01)                            | 8                    |
+| Auth                    | Firebase Authentication, email/password (slice 05)                          | —                    |
+| Movie data              | TMDB API v3 endpoints, v4 bearer token (slice 03)                           | —                    |
+| Playback                | VidKing iframe (slice 21), falling back from a custom HLS.js player backed  | —                    |
+|                          | by a pluggable stream resolver (slice 22)                                   |                      |
+| Styling                 | Plain CSS, one file per component, global tokens in `src/styles/global.css` | —                    |
+| Lint                    | oxlint (Vite's current template default) with React rules                   | 1.x                  |
+| Format                  | Prettier                                                                    | 3.x                  |
+| CI / CD                 | GitHub Actions: lint, format check, type-check, build; deploy on `main`     | —                    |
+| Language                | TypeScript, strict mode                                                     | 7.x                  |
+| Hosting                 | Firebase Hosting (slice 08)                                                 | —                    |
 
 ## ADR-1: Vite over Create React App
 
@@ -56,12 +58,14 @@ merge to `main` (slice 08, ADR-8).
 
 ```
 src/
-  components/      Shared, reusable UI used by 2+ features (Navbar, Footer, Spinner)
+  components/      Shared, reusable UI used by 2+ features (Navbar, Footer, Spinner, VideoPlayer)
   features/
     auth/          Login page, auth hooks, auth-specific components
     catalog/       Home page, hero, title rows
     playback/      Player page
-  lib/             Non-UI modules: env access, TMDB client, Firebase client
+    settings/      Account settings page (slice 22)
+  lib/             Non-UI, app-wide modules: env access, TMDB client, Firebase client
+  services/        Non-UI, pluggable playback integrations: IMDB-id lookup, stream resolver (slice 22)
   styles/          Global CSS: reset and design tokens
   assets/          Images and icons imported by code
 docs/
@@ -74,8 +78,8 @@ public/            Static files served as-is (favicon)
 - **Decision:** group by feature, not by file type.
 - **Why:** each vertical slice then touches mostly one folder, which keeps PRs small and easy to
   review. A new reader finds "everything about login" in one place.
-- **Rule:** a feature may import from `components/` and `lib/`, never from another feature. Shared
-  code gets promoted.
+- **Rule:** a feature may import from `components/`, `lib/` and `services/`, never from another
+  feature. Shared code gets promoted.
 - **Cost:** slightly more structure than a project this size strictly needs. Accepted, because the
   point of the repo is to demonstrate a structure that scales.
 
@@ -103,6 +107,11 @@ public/            Static files served as-is (favicon)
     realistic risk is someone using your TMDB quota. Acceptable for a free-tier demo. The proper
     fix is a small serverless proxy (e.g. a Firebase Cloud Function) that holds the token; out of
     scope for v1, noted as a possible later slice.
+  - **Slice 22 addendum:** the stream resolver's own base URL (`services/streamResolver.ts`) is a
+    plain hardcoded constant, not an env var — it isn't secret, it's an endpoint. What *is*
+    sensitive is the viewer's resolver API key/token, which never touches a bundle at all: it's
+    typed into Settings and stored per-account in Firestore (`lib/streamSettings.ts`), read back
+    only for that account's own requests.
 
 ## ADR-5: No custom backend
 
@@ -235,6 +244,34 @@ public/            Static files served as-is (favicon)
   render it, and features may not import each other (ADR-2).
 - **Cost:** the database and its rules are a one-time manual setup in the Firebase console (the
   deploy workflow ships Hosting only).
+
+## ADR-13: Pluggable stream resolver and a custom HLS.js player
+
+- **Decision:** add `src/services/` for two non-UI modules — `externalIds.ts` (TMDB id → IMDB id,
+  cached in Firestore's `externalIdsCache` collection, shared across accounts) and
+  `streamResolver.ts` (`resolveStreams`, the only place an external stream-resolver API is called)
+  — plus `src/components/VideoPlayer`, a custom player built on `hls.js`. `PlayerPage.tsx` tries
+  this path first and falls back to the VidKing iframe (slice 21) whenever the resolver returns no
+  streams. Added in slice 22.
+- **Why not call the resolver directly from `PlayerPage.tsx`:** same reason TMDB and Firebase each
+  get one client module (ADR-9, ADR-10) — one place to change the endpoint, one place to validate
+  the response shape, and a page that doesn't need to know any of that.
+- **Why a resolver at all, instead of just VidKing:** VidKing is a free third-party iframe with no
+  public docs (see slice 21's notes) and zero control over its UI. A resolver that returns direct
+  `.m3u8` URLs lets this app render its own Netflix-style controls instead of someone else's embed
+  — Noel's own reason for commissioning this slice.
+- **Why `RESOLVER_BASE_URL` is a hardcoded constant, not an env var:** see ADR-4's slice 22
+  addendum — it is a placeholder for an endpoint, not a secret, and the file-level comment makes
+  it the one obvious place to paste a real one. The viewer's own resolver key/token *is* sensitive
+  and goes through Settings → Firestore instead (`lib/streamSettings.ts`), never the bundle.
+- **Why the mock data, not an empty fallback until a real resolver exists:** a stream resolver's
+  response shape can only really be exercised by playing something; shipping the player with a
+  fake-but-real HLS stream (`test-streams.mux.dev`) means the whole stack — quality switching,
+  captions, seeking, resume — is verified end to end before Noel's own endpoint exists at all.
+- **Cost:** `hls.js` adds a dependency and the custom player is meaningfully more code than an
+  iframe `<src>`. CSP (`firebase.json`) must list every domain the active resolver actually
+  serves streams from in both `connect-src` and `media-src`, or the browser silently blocks
+  playback — a manual step whenever the resolver changes, noted in `docs/slices/22-stream-resolver.md`.
 
 ## Conventions
 
