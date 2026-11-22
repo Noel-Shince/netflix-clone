@@ -49,14 +49,14 @@ service cloud.firestore {
         && request.resource.data.addedAt == request.time;
     }
 
-    // Playback resume points (slice 18): one doc per title under the
-    // viewing profile, written from the vidsrc.sh postMessage events the
-    // player page listens for.
+    // Playback resume points (slice 18, season/episode added for the VidKing
+    // episode selector): one doc per title under the viewing profile,
+    // written from the player's postMessage events.
     match /users/{uid}/profiles/{profileId}/watchProgress/{titleKey} {
       allow read, delete: if isOwner(uid);
       allow create, update: if isOwner(uid)
         && request.resource.data.keys().hasOnly(
-          ['id', 'mediaType', 'name', 'progressSeconds', 'durationSeconds', 'completed', 'updatedAt']
+          ['id', 'mediaType', 'name', 'progressSeconds', 'durationSeconds', 'completed', 'season', 'episode', 'updatedAt']
         )
         && request.resource.data.id is int
         && request.resource.data.mediaType in ['movie', 'tv']
@@ -67,6 +67,8 @@ service cloud.firestore {
         && request.resource.data.progressSeconds >= 0
         && (request.resource.data.durationSeconds == null || request.resource.data.durationSeconds is int)
         && request.resource.data.completed is bool
+        && (request.resource.data.season == null || request.resource.data.season is int)
+        && (request.resource.data.episode == null || request.resource.data.episode is int)
         && request.resource.data.updatedAt == request.time;
     }
   }
