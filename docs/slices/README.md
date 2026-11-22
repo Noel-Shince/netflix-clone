@@ -5,7 +5,7 @@ Name: `0X-slice-name.md`, matching branch `feature/0X-slice-name` where the envi
 (see the branch note in `../01-ARCHITECTURE.md`, Conventions).
 
 | #   | Spec                                                                            |
-| --- | -------------------------------------------------------------------------------- |
+| --- | ------------------------------------------------------------------------------- |
 | 01  | [Home page UI](01-home-page.md)                                                 |
 | 02  | [Login page UI](02-login-page.md)                                               |
 | 03  | [TMDB movie data](03-tmdb-data.md)                                              |

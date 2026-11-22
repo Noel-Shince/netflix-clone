@@ -15,7 +15,7 @@ TV shows get an in-app season/episode picker instead of relying on the embed's o
     selector is the picker now, so VidKing's own stays off to avoid two pickers on screen).
     `progress=<seconds>` seeds the resume point, same role as vidsrc.sh's `startAt`.
   - Player events arrive as `{ type: 'PLAYER_EVENT', data: { event, currentTime, duration,
-    season, episode, ... } }`. VidKing has no public docs; this shape is taken from a third-party
+season, episode, ... } }`. VidKing has no public docs; this shape is taken from a third-party
     integration write-up (BismayDey/BLACKSTREAM) and isn't independently confirmed — see the
     caveat in `vidking.ts`'s header. Notably that write-up never states the postMessage origin, so
     `parsePlayerEvent` matches by `event.source` (the iframe's own `contentWindow`) instead, which
