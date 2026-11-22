@@ -40,7 +40,12 @@
   justify-content: space-between;
   gap: 16px;
   padding: 16px var(--page-gutter);
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.45) 60%, transparent 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.85) 0%,
+    rgba(0, 0, 0, 0.45) 60%,
+    transparent 100%
+  );
 }
 
 .player__topbar-left {

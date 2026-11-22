@@ -324,7 +324,12 @@ function TitleState({
 }) {
   const isTv = title.mediaType === 'tv';
   const hasEpisodes = isTv && !!title.seasons && title.seasons.length > 0;
-  const episodeName = useCurrentEpisodeName(title.id, title.mediaType, playing.season, playing.episode);
+  const episodeName = useCurrentEpisodeName(
+    title.id,
+    title.mediaType,
+    playing.season,
+    playing.episode,
+  );
   const [panelOpen, setPanelOpen] = useState(false);
 
   return (
