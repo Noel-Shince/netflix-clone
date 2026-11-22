@@ -100,7 +100,12 @@ function useResumePoint(
       })
       .catch(() => {
         if (!cancelled) {
-          setState({ ready: true, seconds: previewSeconds, hadSavedProgress: false, episode: null });
+          setState({
+            ready: true,
+            seconds: previewSeconds,
+            hadSavedProgress: false,
+            episode: null,
+          });
         }
       });
     return () => {
@@ -213,8 +218,8 @@ function PlayerScreen({
           progressSeconds: playerEvent.currentTimeSeconds,
           durationSeconds: playerEvent.durationSeconds,
           completed: playerEvent.event === 'ended',
-          season: title!.mediaType === 'tv' ? playerEvent.season ?? current.season : null,
-          episode: title!.mediaType === 'tv' ? playerEvent.episode ?? current.episode : null,
+          season: title!.mediaType === 'tv' ? (playerEvent.season ?? current.season) : null,
+          episode: title!.mediaType === 'tv' ? (playerEvent.episode ?? current.episode) : null,
         },
       );
     }
@@ -376,7 +381,10 @@ function SeasonEpisodeSelector({
   // Follow along if playback moves to a season the viewer hasn't manually browsed to.
   useEffect(() => setBrowsingSeason(current.season), [current.season]);
 
-  const load = useMemo(() => () => fetchSeasonEpisodes(tvId, browsingSeason), [tvId, browsingSeason]);
+  const load = useMemo(
+    () => () => fetchSeasonEpisodes(tvId, browsingSeason),
+    [tvId, browsingSeason],
+  );
   const { result, retry } = useAsync(load);
 
   return (
