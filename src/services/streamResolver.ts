@@ -46,7 +46,7 @@ export interface StreamResult {
 // `users/{uid}/settings/preferences.streamApiKey`, see lib/streamSettings.ts)
 // is passed as a query param: ?config={userToken}
 // ─────────────────────────────────────────────────────────────────────────
-const RESOLVER_BASE_URL = ''; // TODO: paste your stream resolver's base URL here.
+const RESOLVER_BASE_URL = 'https://comet.elfhosted.com';
 
 const RESOLVER_TIMEOUT_MS = 10_000;
 
