@@ -34,3 +34,8 @@ dist-ssr
 # Firebase CLI cache and debug logs
 .firebase/
 firebase-debug.log
+
+# Playwright
+/playwright-report/
+/test-results/
+/blob-report/

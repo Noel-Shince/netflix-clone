@@ -73,14 +73,18 @@ Details and rationale: [docs/01-ARCHITECTURE.md](docs/01-ARCHITECTURE.md).
    [docs/01-ARCHITECTURE.md](docs/01-ARCHITECTURE.md) (how, with tradeoffs).
 2. **Slice:** each feature gets a spec in [docs/slices/](docs/slices/), a short-lived branch, and
    one PR against `main`.
-3. **Review and merge:** CI must pass; `main` always builds.
-4. **Ship:** every merge to `main` is deployed to Firebase Hosting by GitHub Actions.
+3. **Review and merge:** CI (lint, format, type-check, build, Playwright E2E — see
+   [docs/slices/20-e2e-tests.md](docs/slices/20-e2e-tests.md)) must pass; `main` always builds.
+4. **Ship:** every merge to `main` that CI passed is deployed to Firebase Hosting by GitHub
+   Actions.
 
 ## Deployment
 
 `.github/workflows/deploy.yml` builds `main` with the env values stored as GitHub repository
 secrets and deploys it to Firebase Hosting (`firebase.json` holds the routing and cache rules).
-To deploy your own copy, follow the one-time setup in
+It only runs once `.github/workflows/ci.yml` finishes successfully for that commit on `main`
+(see [docs/slices/20-e2e-tests.md](docs/slices/20-e2e-tests.md)), so a failing test or a broken
+build never reaches the live site. To deploy your own copy, follow the one-time setup in
 [docs/slices/08-deploy.md](docs/slices/08-deploy.md#one-time-setup-owner). Manual fallback:
 
 ```bash
@@ -106,9 +110,11 @@ Each slice has a spec in [docs/slices/](docs/slices/) and landed as one PR.
 - [x] 08 [Deploy to Firebase Hosting](docs/slices/08-deploy.md)
 - [x] 11 [Multiple profiles](docs/slices/11-profiles.md)
 - [x] 14 [Rotating backdrop art](docs/slices/14-rotating-backdrops.md)
+- [x] 20 [E2E tests and a real deploy gate](docs/slices/20-e2e-tests.md)
 
 Possible follow-ups, not planned: a Cloud Function proxy to keep the TMDB token out of the
-bundle (ADR-4), route-level code splitting, PR preview deploys, automated end-to-end tests.
+bundle (ADR-4), route-level code splitting, PR preview deploys, branch protection requiring CI
+to pass before a human can merge.
 
 ## Credits and disclaimer
 

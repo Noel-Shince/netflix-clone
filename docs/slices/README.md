@@ -22,6 +22,7 @@ Name: `0X-slice-name.md`, matching branch `feature/0X-slice-name` where the envi
 | 14  | [Rotating backdrop art](14-rotating-backdrops.md)               |
 | 18  | [Real playback via vidsrc.sh](18-vidsrc-playback.md)            |
 | 19  | [Smarter search and more home rows](19-search-and-home-rows.md) |
+| 20  | [E2E tests and a real deploy gate](20-e2e-tests.md)             |
 
 Template:
 
