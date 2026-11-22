@@ -33,6 +33,13 @@
   padding: 0;
 }
 
+html {
+  /* Off-canvas panels (e.g. the player's episode panel) sit at translateX(100%),
+     which still extends the document's scrollable area even though nothing is
+     visible there; this keeps the page from gaining a sliver of horizontal scroll. */
+  overflow-x: hidden;
+}
+
 body {
   min-height: 100vh;
   /* Mobile browsers: 100vh is the height with the URL bar hidden; dvh is what is visible. */

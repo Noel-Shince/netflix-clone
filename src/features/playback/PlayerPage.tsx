@@ -25,7 +25,7 @@
  */
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
-import { ArrowLeftIcon } from '../../components/icons/Icons.tsx';
+import { ArrowLeftIcon, CloseIcon, EpisodesIcon } from '../../components/icons/Icons.tsx';
 import { MyListButton } from '../../components/MyListButton/MyListButton.tsx';
 import { NotFoundPage } from '../../components/NotFound/NotFoundPage.tsx';
 import { TitleRow } from '../../components/TitleRow/TitleRow.tsx';
@@ -253,10 +253,11 @@ function PlayerScreen({
 
   return (
     <main className="player">
-      <BackButton />
-
       {result.status === 'error' && (
-        <ErrorState notFound={isNotFound(result.error)} error={result.error} onRetry={retry} />
+        <>
+          <BackButton />
+          <ErrorState notFound={isNotFound(result.error)} error={result.error} onRetry={retry} />
+        </>
       )}
       {title && resumePoint.ready && (
         <TitleState
@@ -292,6 +293,22 @@ function BackButton() {
   );
 }
 
+/** Current episode's name, for the top bar subtitle (TV only). Reuses the TMDB season-request cache, so this is free once the episode panel has loaded the same season. */
+function useCurrentEpisodeName(
+  tvId: number,
+  mediaType: MediaType,
+  season: number,
+  episodeNumber: number,
+): string | null {
+  const load = useMemo(
+    () => () => (mediaType === 'tv' ? fetchSeasonEpisodes(tvId, season) : Promise.resolve([])),
+    [tvId, mediaType, season],
+  );
+  const { result } = useAsync(load);
+  if (result.status !== 'success') return null;
+  return result.data.find((episode) => episode.episodeNumber === episodeNumber)?.name ?? null;
+}
+
 function TitleState({
   title,
   startAtSeconds,
@@ -306,35 +323,68 @@ function TitleState({
   iframeRef: RefObject<HTMLIFrameElement | null>;
 }) {
   const isTv = title.mediaType === 'tv';
+  const hasEpisodes = isTv && !!title.seasons && title.seasons.length > 0;
+  const episodeName = useCurrentEpisodeName(title.id, title.mediaType, playing.season, playing.episode);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   return (
     <>
-      <div className="player__stage">
-        <iframe
-          ref={iframeRef}
-          key={isTv ? `${title.id}-${playing.season}-${playing.episode}` : String(title.id)}
-          className="player__frame"
-          src={vidkingEmbedUrl(
-            {
-              tmdbId: title.id,
-              mediaType: title.mediaType,
-              season: isTv ? playing.season : undefined,
-              episode: isTv ? playing.episode : undefined,
-            },
-            startAtSeconds,
+      <div className="player__hero">
+        <div className="player__stage">
+          <iframe
+            ref={iframeRef}
+            key={isTv ? `${title.id}-${playing.season}-${playing.episode}` : String(title.id)}
+            className="player__frame"
+            src={vidkingEmbedUrl(
+              {
+                tmdbId: title.id,
+                mediaType: title.mediaType,
+                season: isTv ? playing.season : undefined,
+                episode: isTv ? playing.episode : undefined,
+              },
+              startAtSeconds,
+            )}
+            title={title.name}
+            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        </div>
+
+        <div className="player__topbar">
+          <div className="player__topbar-left">
+            <BackButton />
+            <div className="player__topbar-title">
+              <h1 id="player-title" className="player__title">
+                {title.name}
+                {title.year && <span className="player__year"> ({title.year})</span>}
+              </h1>
+              {isTv && (
+                <p className="player__topbar-subtitle">
+                  {episodeName
+                    ? `S${playing.season}:E${playing.episode} · ${episodeName}`
+                    : `Season ${playing.season} · Episode ${playing.episode}`}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {hasEpisodes && (
+            <button
+              type="button"
+              className="player__episodes-toggle"
+              aria-haspopup="dialog"
+              aria-expanded={panelOpen}
+              onClick={() => setPanelOpen(true)}
+            >
+              <EpisodesIcon />
+              Episodes
+            </button>
           )}
-          title={title.name}
-          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-          allowFullScreen
-          referrerPolicy="strict-origin-when-cross-origin"
-        />
+        </div>
       </div>
 
-      <section className="player__info" aria-labelledby="player-title">
-        <h1 id="player-title" className="player__title">
-          {title.name}
-          {title.year && <span className="player__year"> ({title.year})</span>}
-        </h1>
+      <section className="player__details" aria-labelledby="player-title">
         <div className="player__info-actions">
           <MyListButton
             className="player__button player__button--secondary"
@@ -349,13 +399,43 @@ function TitleState({
         {title.synopsis && <p className="player__synopsis">{title.synopsis}</p>}
       </section>
 
-      {isTv && title.seasons && title.seasons.length > 0 && (
-        <SeasonEpisodeSelector
-          tvId={title.id}
-          seasons={title.seasons}
-          current={playing}
-          onSelect={onSelectEpisode}
-        />
+      {hasEpisodes && (
+        <>
+          <div
+            className={`player__panel-backdrop${panelOpen ? ' player__panel-backdrop--open' : ''}`}
+            onClick={() => setPanelOpen(false)}
+          />
+          <div
+            className={`player__panel${panelOpen ? ' player__panel--open' : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Episodes"
+            inert={!panelOpen}
+          >
+            <div className="player__panel-header">
+              <h2 className="player__panel-title">Episodes</h2>
+              <button
+                type="button"
+                className="player__panel-close"
+                aria-label="Close episodes"
+                onClick={() => setPanelOpen(false)}
+              >
+                <CloseIcon />
+              </button>
+            </div>
+            <div className="player__panel-body">
+              <SeasonEpisodeSelector
+                tvId={title.id}
+                seasons={title.seasons!}
+                current={playing}
+                onSelect={(episode) => {
+                  onSelectEpisode(episode);
+                  setPanelOpen(false);
+                }}
+              />
+            </div>
+          </div>
+        </>
       )}
     </>
   );

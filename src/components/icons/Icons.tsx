@@ -181,3 +181,15 @@ export function ThumbsDownIcon(props: IconProps) {
     </Svg>
   );
 }
+
+export function EpisodesIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="5" width="13" height="4" rx="1" />
+      <rect x="3" y="11" width="13" height="4" rx="1" />
+      <rect x="3" y="17" width="13" height="4" rx="1" />
+      <path d="M19 7v12" />
+      <path d="m16.5 15 3 2.5-3 2.5" />
+    </Svg>
+  );
+}
