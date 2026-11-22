@@ -18,8 +18,8 @@
  * so this shared component needs no knowledge of the auth feature (ADR-2).
  *
  * The account menu shows the active profile's avatar and lets the user switch
- * to another profile or manage them (slice 11). Profile state comes from
- * lib/profileContext.ts, not from the profiles feature, for the same reason.
+ * to another profile, manage them, or open account Settings (slice 11; the
+ * Settings link added in slice 22 — streaming settings).
  */
 import { useCallback, useEffect, useId, useRef, useState, type RefObject } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router';
@@ -28,7 +28,7 @@ import { useProfiles } from '../../lib/profileContext.ts';
 import { ROUTES, SEARCH_PARAM, SEARCH_PATH, searchPath } from '../../lib/routes.ts';
 import { Logo } from '../Logo/Logo.tsx';
 import { ProfileAvatar } from '../ProfileAvatar/ProfileAvatar.tsx';
-import { CaretDownIcon, CloseIcon, SearchIcon } from '../icons/Icons.tsx';
+import { CaretDownIcon, CloseIcon, GearSmallIcon, SearchIcon } from '../icons/Icons.tsx';
 import { NotificationsMenu } from './NotificationsMenu.tsx';
 import { useDismiss } from './useDismiss.ts';
 import './Navbar.css';
@@ -236,6 +236,13 @@ export function Navbar() {
                 onClick={() => setMenuOpen(false)}
               >
                 Manage profiles
+              </Link>
+              <Link
+                to={ROUTES.settings}
+                className="navbar__dropdown-item"
+                onClick={() => setMenuOpen(false)}
+              >
+                <GearSmallIcon aria-hidden="true" /> Settings
               </Link>
               <button
                 type="button"

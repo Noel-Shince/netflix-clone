@@ -193,3 +193,76 @@ export function EpisodesIcon(props: IconProps) {
     </Svg>
   );
 }
+
+export function GearSmallIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" />
+    </Svg>
+  );
+}
+
+export function PauseIcon(props: IconProps) {
+  return (
+    <Svg fill="currentColor" stroke="none" {...props}>
+      <rect x="6" y="4" width="4" height="16" />
+      <rect x="14" y="4" width="4" height="16" />
+    </Svg>
+  );
+}
+
+export function VolumeIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 9v6h4l5 5V4L8 9H4Z" />
+      <path d="M16.5 8.5a5 5 0 0 1 0 7" />
+      <path d="M19 6a9 9 0 0 1 0 12" />
+    </Svg>
+  );
+}
+
+export function VolumeMuteIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 9v6h4l5 5V4L8 9H4Z" />
+      <path d="m16 9 5 6M21 9l-5 6" />
+    </Svg>
+  );
+}
+
+export function FullscreenIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3" />
+    </Svg>
+  );
+}
+
+export function FullscreenExitIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M9 3v3a2 2 0 0 1-2 2H4M15 3v3a2 2 0 0 0 2 2h3M21 15h-3a2 2 0 0 0-2 2v3M9 21v-3a2 2 0 0 0-2-2H4" />
+    </Svg>
+  );
+}
+
+export function CaptionsIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="2" y="5" width="20" height="14" rx="3" />
+      <path d="M7 11.5v-.5a1.5 1.5 0 0 0-3 0v2a1.5 1.5 0 0 0 3 0" />
+      <path d="M14 11.5v-.5a1.5 1.5 0 0 0-3 0v2a1.5 1.5 0 0 0 3 0" />
+      <path d="M17 15h3" />
+    </Svg>
+  );
+}
+
+export function GearIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+    </Svg>
+  );
+}

@@ -24,6 +24,7 @@ Name: `0X-slice-name.md`, matching branch `feature/0X-slice-name` where the envi
 | 19  | [Smarter search and more home rows](19-search-and-home-rows.md)                 |
 | 20  | [E2E tests and a real deploy gate](20-e2e-tests.md)                             |
 | 21  | [VidKing player with a season/episode selector](21-vidking-episode-selector.md) |
+| 22  | [Stream resolver infrastructure](22-stream-resolver.md)                         |
 
 Template:
 
