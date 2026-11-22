@@ -1,11 +1,15 @@
 /**
  * Playback resume position, in Firestore under the viewing profile:
- * `{ownerPath}/watchProgress/{mediaType}-{tmdbId}` (slice 18).
+ * `{ownerPath}/watchProgress/{mediaType}-{tmdbId}` (slice 18; season/episode
+ * added when the player gained a TV episode selector).
  *
- * vidsrc.sh reports position via postMessage while playing; this persists it
- * so the player page can resume a title where a previous session left off,
- * even from another device. Owner is set from outside (`setWatchProgressOwner`,
- * mirroring myList.ts), so this module knows nothing of auth or profiles.
+ * The player page reports position via VidKing's postMessage events while
+ * playing; this persists it so the page can resume a title where a previous
+ * session left off, even from another device. For TV, `season`/`episode`
+ * say which episode the saved `progressSeconds` belongs to, so reopening the
+ * show resumes the right episode, not just S1E1. Owner is set from outside
+ * (`setWatchProgressOwner`, mirroring myList.ts), so this module knows
+ * nothing of auth or profiles.
  */
 import {
   collection,
@@ -37,6 +41,9 @@ export interface WatchProgress {
   progressSeconds: number;
   durationSeconds: number | null;
   completed: boolean;
+  /** TV only: the episode `progressSeconds` belongs to. Null for movies. */
+  season?: number | null;
+  episode?: number | null;
 }
 
 /** The saved resume point for a title, or null when signed out, unsaved, or unreadable. */
@@ -55,6 +62,8 @@ export async function getWatchProgress(
       progressSeconds: data.progressSeconds,
       durationSeconds: typeof data.durationSeconds === 'number' ? data.durationSeconds : null,
       completed: data.completed === true,
+      season: typeof data.season === 'number' ? data.season : null,
+      episode: typeof data.episode === 'number' ? data.episode : null,
     };
   } catch (error) {
     console.error('Could not read watch progress', error);
@@ -76,6 +85,8 @@ export function saveWatchProgress(
     progressSeconds: Math.floor(progress.progressSeconds),
     durationSeconds: progress.durationSeconds != null ? Math.floor(progress.durationSeconds) : null,
     completed: progress.completed,
+    season: progress.season ?? null,
+    episode: progress.episode ?? null,
     updatedAt: serverTimestamp(),
   }).catch((error) => console.error('Could not save watch progress', error));
 }

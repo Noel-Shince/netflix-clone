@@ -1,12 +1,14 @@
 /**
  * Player page (`/player/:id`, `/player/tv/:id`): plays the actual movie or
- * TV show via vidsrc.sh (slice 18), with the title's details underneath.
+ * TV show via VidKing (vidking.net), with the title's details underneath.
  *
- * vidsrc.sh needs no API key and resolves either an IMDB or TMDB id
- * (api/playbackApi.ts fetches TMDB's external_ids for the IMDB one, falling
- * back to the TMDB id when TMDB has none). TV shows have no episode picker in
- * this app yet, so the TV embed omits season/episode: vidsrc.sh shows its own
- * picker and resumes the last episode it saw for this viewer.
+ * VidKing resolves by TMDB id directly (no IMDB lookup needed). TV shows get
+ * this app's own season/episode selector below the player (fetched from
+ * TMDB's `/tv/{id}/season/{n}`); picking an episode reloads the player at
+ * that episode. VidKing's own `nextEpisode=true` can still auto-advance past
+ * the end of an episode on its own — its postMessage events report the new
+ * season/episode when that happens, and the selector follows along (see
+ * `playing` state below).
  *
  * Opening a title shows a "More Like This" row under the details (slice 09,
  * extended to TV in slice 17). Only the watch history behind the *home
@@ -15,11 +17,13 @@
  *
  * Resume position: the hover preview / hero banner can hand off an elapsed
  * trailer-preview time via the `t` query param (lib/routes.ts); this is
- * compared against any resume point vidsrc.sh previously reported for this
+ * compared against any resume point VidKing previously reported for this
  * title (saved to Firestore, lib/watchProgress.ts) and the larger of the two
- * is used as `startAt`, so switching devices still resumes correctly.
+ * is used as the embed's `progress` param — but only when the episode
+ * actually playing matches the one the saved progress was for, so jumping to
+ * a different episode never starts mid-way through.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { ArrowLeftIcon } from '../../components/icons/Icons.tsx';
 import { MyListButton } from '../../components/MyListButton/MyListButton.tsx';
@@ -32,14 +36,20 @@ import { fetchRelatedTitles } from '../../lib/recommendations.ts';
 import { useAsync } from '../../lib/useAsync.ts';
 import { recordWatch } from '../../lib/watchHistory.ts';
 import { getWatchProgress, saveWatchProgress } from '../../lib/watchProgress.ts';
+import { fetchSeasonEpisodes, type Episode } from './api/episodesApi.ts';
 import { fetchPlayableTitle, isNotFound } from './api/playbackApi.ts';
-import type { PlayableTitle } from './types.ts';
-import { parsePlayerEvent, vidsrcEmbedUrl } from './vidsrc.ts';
+import type { PlayableTitle, SeasonSummary } from './types.ts';
+import { parsePlayerEvent, vidkingEmbedUrl } from './vidking.ts';
 import './PlayerPage.css';
 
 const APP_TITLE = 'Noelflix';
-/** Don't write every ~5s "playing" ping; a pause/seek/completion always writes immediately. */
+/** Don't write every ~5s "timeupdate" ping; a play/pause/seek/completion always writes immediately. */
 const MIN_PROGRESS_SAVE_INTERVAL_MS = 15_000;
+
+interface EpisodeRef {
+  season: number;
+  episode: number;
+}
 
 /** `/player/:id` is a movie, `/player/tv/:id` a TV show (see lib/routes.ts). */
 export function PlayerPage({ mediaType = 'movie' }: { mediaType?: MediaType }) {
@@ -60,16 +70,17 @@ export function PlayerPage({ mediaType = 'movie' }: { mediaType?: MediaType }) {
   );
 }
 
-/** The larger of a hover-preview handoff and any previously saved resume point. */
+/** The larger of a hover-preview handoff and any previously saved resume point, plus which episode (TV) it was for. */
 function useResumePoint(
   id: number,
   mediaType: MediaType,
   previewSeconds: number,
-): { ready: boolean; seconds: number; hadSavedProgress: boolean } {
+): { ready: boolean; seconds: number; hadSavedProgress: boolean; episode: EpisodeRef | null } {
   const [state, setState] = useState({
     ready: false,
     seconds: previewSeconds,
     hadSavedProgress: false,
+    episode: null as EpisodeRef | null,
   });
 
   useEffect(() => {
@@ -81,10 +92,21 @@ function useResumePoint(
           saved && !saved.completed
             ? Math.max(previewSeconds, saved.progressSeconds)
             : previewSeconds;
-        setState({ ready: true, seconds, hadSavedProgress: saved != null });
+        const episode =
+          saved?.season != null && saved.episode != null
+            ? { season: saved.season, episode: saved.episode }
+            : null;
+        setState({ ready: true, seconds, hadSavedProgress: saved != null, episode });
       })
       .catch(() => {
-        if (!cancelled) setState({ ready: true, seconds: previewSeconds, hadSavedProgress: false });
+        if (!cancelled) {
+          setState({
+            ready: true,
+            seconds: previewSeconds,
+            hadSavedProgress: false,
+            episode: null,
+          });
+        }
       });
     return () => {
       cancelled = true;
@@ -108,6 +130,18 @@ function PlayerScreen({
   const title = result.status === 'success' ? result.data : null;
   const resumePoint = useResumePoint(id, mediaType, previewSeconds);
 
+  // The episode actually loaded in the player right now (TV only). Seeded
+  // from the saved resume point once that's known (defaulting to S1E1), and
+  // kept in sync with VidKing's own `nextEpisode` auto-advance via its
+  // postMessage events (see the message listener below).
+  const [playing, setPlaying] = useState<EpisodeRef>({ season: 1, episode: 1 });
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (mediaType !== 'tv' || seededRef.current || !resumePoint.ready) return;
+    seededRef.current = true;
+    if (resumePoint.episode) setPlaying(resumePoint.episode);
+  }, [mediaType, resumePoint.ready, resumePoint.episode]);
+
   // A "More Like This" card swaps the id without leaving the page.
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -127,7 +161,7 @@ function PlayerScreen({
   // Marks the title as watched (Firestore `watchProgress`, which backs the
   // home page's "Shows You've Watched" row) as soon as it's opened, the same
   // "watched" = "opened the player page" definition watchHistory.ts already
-  // uses. Without this, the row depended entirely on vidsrc.sh's own
+  // uses. Without this, the row depended entirely on VidKing's own
   // postMessage progress pings (below) ever arriving — which don't always
   // fire, so a title played start to finish could still never show up.
   // Only fires once per title (`hadSavedProgress`): a title already resuming
@@ -136,29 +170,56 @@ function PlayerScreen({
     if (!title || !resumePoint.ready || resumePoint.hadSavedProgress) return;
     saveWatchProgress(
       { id: title.id, mediaType: title.mediaType, name: title.name },
-      { progressSeconds: resumePoint.seconds, durationSeconds: null, completed: false },
+      {
+        progressSeconds: resumePoint.seconds,
+        durationSeconds: null,
+        completed: false,
+        season: title.mediaType === 'tv' ? playing.season : null,
+        episode: title.mediaType === 'tv' ? playing.episode : null,
+      },
     );
-  }, [title, resumePoint.ready, resumePoint.hadSavedProgress, resumePoint.seconds]);
+  }, [title, resumePoint.ready, resumePoint.hadSavedProgress, resumePoint.seconds, playing]);
 
-  // vidsrc.sh reports playback position by postMessage; persist it so the
-  // title resumes correctly next time (see lib/watchProgress.ts).
+  // VidKing reports playback position (and, for TV, auto-advanced episode)
+  // by postMessage; persist it so the title resumes correctly next time (see
+  // lib/watchProgress.ts). `playingRef` lets the listener read the current
+  // episode without resubscribing every time it changes.
+  const playingRef = useRef(playing);
+  useEffect(() => {
+    playingRef.current = playing;
+  }, [playing]);
+
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const lastSaveRef = useRef(0);
   useEffect(() => {
     if (!title) return;
     lastSaveRef.current = 0;
     function handleMessage(event: MessageEvent) {
-      const playerEvent = parsePlayerEvent(event);
-      if (!playerEvent || !title) return;
+      const playerEvent = parsePlayerEvent(event, iframeRef.current?.contentWindow ?? null);
+      if (!playerEvent) return;
+
+      const current = playingRef.current;
+      if (
+        title!.mediaType === 'tv' &&
+        playerEvent.season != null &&
+        playerEvent.episode != null &&
+        (playerEvent.season !== current.season || playerEvent.episode !== current.episode)
+      ) {
+        setPlaying({ season: playerEvent.season, episode: playerEvent.episode });
+      }
+
       const now = Date.now();
-      const isMilestone = playerEvent.status !== 'playing';
+      const isMilestone = playerEvent.event !== 'timeupdate';
       if (!isMilestone && now - lastSaveRef.current < MIN_PROGRESS_SAVE_INTERVAL_MS) return;
       lastSaveRef.current = now;
       saveWatchProgress(
-        { id: title.id, mediaType: title.mediaType, name: title.name },
+        { id: title!.id, mediaType: title!.mediaType, name: title!.name },
         {
-          progressSeconds: playerEvent.progressSeconds,
+          progressSeconds: playerEvent.currentTimeSeconds,
           durationSeconds: playerEvent.durationSeconds,
-          completed: playerEvent.status === 'completed',
+          completed: playerEvent.event === 'ended',
+          season: title!.mediaType === 'tv' ? (playerEvent.season ?? current.season) : null,
+          episode: title!.mediaType === 'tv' ? (playerEvent.episode ?? current.episode) : null,
         },
       );
     }
@@ -179,6 +240,17 @@ function PlayerScreen({
     );
   }
 
+  // Only honour the saved resume point when it's for the episode actually
+  // about to play; switching episodes (by hand or via VidKing's own
+  // next-episode advance before this reads it) always starts from 0.
+  const startAtSeconds =
+    title?.mediaType === 'tv'
+      ? resumePoint.episode?.season === playing.season &&
+        resumePoint.episode?.episode === playing.episode
+        ? resumePoint.seconds
+        : 0
+      : resumePoint.seconds;
+
   return (
     <main className="player">
       <BackButton />
@@ -187,7 +259,13 @@ function PlayerScreen({
         <ErrorState notFound={isNotFound(result.error)} error={result.error} onRetry={retry} />
       )}
       {title && resumePoint.ready && (
-        <TitleState title={title} startAtSeconds={resumePoint.seconds} />
+        <TitleState
+          title={title}
+          startAtSeconds={startAtSeconds}
+          playing={playing}
+          onSelectEpisode={setPlaying}
+          iframeRef={iframeRef}
+        />
       )}
       {title && <MoreLikeThis id={title.id} mediaType={title.mediaType} />}
     </main>
@@ -214,14 +292,35 @@ function BackButton() {
   );
 }
 
-function TitleState({ title, startAtSeconds }: { title: PlayableTitle; startAtSeconds: number }) {
+function TitleState({
+  title,
+  startAtSeconds,
+  playing,
+  onSelectEpisode,
+  iframeRef,
+}: {
+  title: PlayableTitle;
+  startAtSeconds: number;
+  playing: EpisodeRef;
+  onSelectEpisode: (episode: EpisodeRef) => void;
+  iframeRef: RefObject<HTMLIFrameElement | null>;
+}) {
+  const isTv = title.mediaType === 'tv';
+
   return (
     <>
       <div className="player__stage">
         <iframe
+          ref={iframeRef}
+          key={isTv ? `${title.id}-${playing.season}-${playing.episode}` : String(title.id)}
           className="player__frame"
-          src={vidsrcEmbedUrl(
-            { imdbId: title.imdbId, tmdbId: title.id, mediaType: title.mediaType },
+          src={vidkingEmbedUrl(
+            {
+              tmdbId: title.id,
+              mediaType: title.mediaType,
+              season: isTv ? playing.season : undefined,
+              episode: isTv ? playing.episode : undefined,
+            },
             startAtSeconds,
           )}
           title={title.name}
@@ -249,7 +348,129 @@ function TitleState({ title, startAtSeconds }: { title: PlayableTitle; startAtSe
         </div>
         {title.synopsis && <p className="player__synopsis">{title.synopsis}</p>}
       </section>
+
+      {isTv && title.seasons && title.seasons.length > 0 && (
+        <SeasonEpisodeSelector
+          tvId={title.id}
+          seasons={title.seasons}
+          current={playing}
+          onSelect={onSelectEpisode}
+        />
+      )}
     </>
+  );
+}
+
+/**
+ * TV season tabs + episode list. Browsing a season (to look at its episodes)
+ * is independent from which episode is actually playing — only clicking an
+ * episode changes that.
+ */
+function SeasonEpisodeSelector({
+  tvId,
+  seasons,
+  current,
+  onSelect,
+}: {
+  tvId: number;
+  seasons: SeasonSummary[];
+  current: EpisodeRef;
+  onSelect: (episode: EpisodeRef) => void;
+}) {
+  const [browsingSeason, setBrowsingSeason] = useState(current.season);
+  // Follow along if playback moves to a season the viewer hasn't manually browsed to.
+  useEffect(() => setBrowsingSeason(current.season), [current.season]);
+
+  const load = useMemo(
+    () => () => fetchSeasonEpisodes(tvId, browsingSeason),
+    [tvId, browsingSeason],
+  );
+  const { result, retry } = useAsync(load);
+
+  return (
+    <section className="player__episodes" aria-label="Episodes">
+      <div className="player__season-tabs" role="tablist" aria-label="Seasons">
+        {seasons.map((season) => (
+          <button
+            key={season.seasonNumber}
+            type="button"
+            role="tab"
+            aria-selected={season.seasonNumber === browsingSeason}
+            className={`player__season-tab${
+              season.seasonNumber === browsingSeason ? ' player__season-tab--active' : ''
+            }`}
+            onClick={() => setBrowsingSeason(season.seasonNumber)}
+          >
+            {season.name}
+          </button>
+        ))}
+      </div>
+
+      {result.status === 'loading' && <p className="player__episodes-status">Loading episodes…</p>}
+      {result.status === 'error' && (
+        <p className="player__episodes-status">
+          {tmdbErrorMessage(result.error, 'Couldn’t load episodes.')}{' '}
+          <button type="button" className="player__episodes-retry" onClick={retry}>
+            Retry
+          </button>
+        </p>
+      )}
+      {result.status === 'success' && (
+        <EpisodeList
+          episodes={result.data}
+          isPlaying={(episode) => browsingSeason === current.season && episode === current.episode}
+          onSelect={(episode) => onSelect({ season: browsingSeason, episode })}
+        />
+      )}
+    </section>
+  );
+}
+
+function EpisodeList({
+  episodes,
+  isPlaying,
+  onSelect,
+}: {
+  episodes: Episode[];
+  isPlaying: (episodeNumber: number) => boolean;
+  onSelect: (episodeNumber: number) => void;
+}) {
+  if (episodes.length === 0) {
+    return <p className="player__episodes-status">No episodes listed for this season yet.</p>;
+  }
+  return (
+    <ul className="player__episode-list">
+      {episodes.map((episode) => {
+        const active = isPlaying(episode.episodeNumber);
+        return (
+          <li key={episode.episodeNumber}>
+            <button
+              type="button"
+              className={`player__episode${active ? ' player__episode--active' : ''}`}
+              aria-current={active ? 'true' : undefined}
+              onClick={() => onSelect(episode.episodeNumber)}
+            >
+              <span className="player__episode-thumb">
+                {episode.stillUrl ? (
+                  <img src={episode.stillUrl} alt="" loading="lazy" />
+                ) : (
+                  <span className="player__episode-thumb-fallback">{episode.episodeNumber}</span>
+                )}
+              </span>
+              <span className="player__episode-body">
+                <span className="player__episode-heading">
+                  <span className="player__episode-number">{episode.episodeNumber}.</span>
+                  <span className="player__episode-name">{episode.name}</span>
+                </span>
+                {episode.overview && (
+                  <span className="player__episode-overview">{episode.overview}</span>
+                )}
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

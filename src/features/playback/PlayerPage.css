@@ -60,7 +60,7 @@
   justify-content: center;
 }
 
-/* Matches Netflix's own watch screen while vidsrc.sh is about to load:
+/* Matches Netflix's own watch screen while the player is about to load:
    full-bleed black, nothing else on screen but the spinner. */
 .player--loading {
   display: flex;
@@ -190,4 +190,165 @@
    the player's padding to line it up with the home page rows. */
 .player__more {
   margin-inline: calc(-1 * var(--page-gutter));
+}
+
+/* TV season/episode selector: shares the info block's width so it lines up
+   with the title and the player above it. */
+.player__episodes {
+  width: min(100%, (100vh - 200px) * 16 / 9);
+  width: min(100%, (100dvh - 200px) * 16 / 9);
+  min-width: min(100%, 320px);
+  margin: 32px auto 0;
+}
+
+.player__season-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  /* Hide the scrollbar on phones while keeping the row swipeable; desktop
+     has enough room that it rarely needs to scroll at all. */
+  scrollbar-width: thin;
+}
+
+.player__season-tab {
+  flex: 0 0 auto;
+  padding: 8px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.player__season-tab:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text);
+}
+
+.player__season-tab--active {
+  border-color: var(--color-text);
+  background: var(--color-text);
+  color: #000;
+}
+
+.player__episodes-status {
+  margin-top: 16px;
+  color: var(--color-text-muted);
+}
+
+.player__episodes-retry {
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.player__episode-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 16px;
+  list-style: none;
+}
+
+.player__episode {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.player__episode:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.player__episode--active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.player__episode-thumb {
+  position: relative;
+  flex: 0 0 120px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--color-surface);
+}
+
+.player__episode-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.player__episode-thumb-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--color-text-muted);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.player__episode--active .player__episode-thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid #e50914;
+  border-radius: 4px;
+}
+
+.player__episode-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.player__episode-heading {
+  display: flex;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.player__episode-number {
+  color: var(--color-text-muted);
+}
+
+.player__episode-overview {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+@media (max-width: 480px) {
+  .player__episode {
+    gap: 12px;
+  }
+
+  .player__episode-thumb {
+    flex-basis: 88px;
+  }
+
+  .player__episode-overview {
+    -webkit-line-clamp: 3;
+  }
 }

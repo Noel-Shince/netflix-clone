@@ -4,6 +4,13 @@
  */
 import type { MediaType } from '../../lib/media.ts';
 
+/** One TV season, for the season/episode selector. Movies have none. */
+export interface SeasonSummary {
+  seasonNumber: number;
+  name: string;
+  episodeCount: number;
+}
+
 export interface PlayableTitle {
   id: number;
   mediaType: MediaType;
@@ -15,6 +22,6 @@ export interface PlayableTitle {
   imageUrl: string | null;
   /** Card-sized backdrop, what My List saves. */
   cardImageUrl: string | null;
-  /** IMDB id (e.g. "tt1300854"), or null when TMDB has none for this title. */
-  imdbId: string | null;
+  /** TV only: seasons with at least one aired episode. Null for movies. */
+  seasons: SeasonSummary[] | null;
 }
