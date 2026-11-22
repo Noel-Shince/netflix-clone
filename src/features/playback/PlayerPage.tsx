@@ -1,14 +1,23 @@
 /**
- * Player page (`/player/:id`, `/player/tv/:id`): plays the actual movie or
- * TV show via VidKing (vidking.net), with the title's details underneath.
+ * Player page (`/player/:id`, `/player/tv/:id`): plays the movie or TV show
+ * through the custom HLS.js player (`components/VideoPlayer`), using
+ * streams from `services/streamResolver.ts` — resolved from the title's
+ * IMDB id (`services/externalIds.ts`) and, for TV, the selected episode.
  *
- * VidKing resolves by TMDB id directly (no IMDB lookup needed). TV shows get
- * this app's own season/episode selector below the player (fetched from
- * TMDB's `/tv/{id}/season/{n}`); picking an episode reloads the player at
- * that episode. VidKing's own `nextEpisode=true` can still auto-advance past
- * the end of an episode on its own — its postMessage events report the new
- * season/episode when that happens, and the selector follows along (see
- * `playing` state below).
+ * Until a real resolver endpoint is configured (see the TODO in
+ * streamResolver.ts), that always returns a small mock stream, so this page
+ * works end to end out of the box. Whenever it instead returns no streams
+ * — a misconfigured endpoint, a lookup failure, or simply before it has
+ * answered — this falls back to the VidKing (vidking.net) iframe embed
+ * (`vidking.ts`), the player from the previous slice, so a broken resolver
+ * never breaks playback.
+ *
+ * TV shows get this app's own season/episode selector below the player
+ * (fetched from TMDB's `/tv/{id}/season/{n}`); picking an episode re-resolves
+ * streams for that episode. VidKing's own `nextEpisode=true` can still
+ * auto-advance past the end of an episode when the VidKing fallback is what's
+ * playing; the custom player has no equivalent yet (noted as a gap, not a
+ * silent behaviour difference — see docs/slices/22-stream-resolver.md).
  *
  * Opening a title shows a "More Like This" row under the details (slice 09,
  * extended to TV in slice 17). Only the watch history behind the *home
@@ -17,11 +26,11 @@
  *
  * Resume position: the hover preview / hero banner can hand off an elapsed
  * trailer-preview time via the `t` query param (lib/routes.ts); this is
- * compared against any resume point VidKing previously reported for this
- * title (saved to Firestore, lib/watchProgress.ts) and the larger of the two
- * is used as the embed's `progress` param — but only when the episode
- * actually playing matches the one the saved progress was for, so jumping to
- * a different episode never starts mid-way through.
+ * compared against any resume point previously saved for this title (to
+ * Firestore, lib/watchProgress.ts) and the larger of the two is used as the
+ * player's start position — but only when the episode actually playing
+ * matches the one the saved progress was for, so jumping to a different
+ * episode never starts mid-way through.
  */
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
@@ -29,13 +38,18 @@ import { ArrowLeftIcon, CloseIcon, EpisodesIcon } from '../../components/icons/I
 import { MyListButton } from '../../components/MyListButton/MyListButton.tsx';
 import { NotFoundPage } from '../../components/NotFound/NotFoundPage.tsx';
 import { TitleRow } from '../../components/TitleRow/TitleRow.tsx';
+import { VideoPlayer, type VideoPlayerEvent } from '../../components/VideoPlayer/VideoPlayer.tsx';
+import { currentUserId } from '../../lib/firebase.ts';
 import type { MediaType } from '../../lib/media.ts';
 import { RESUME_PARAM } from '../../lib/routes.ts';
+import { getStreamApiKey } from '../../lib/streamSettings.ts';
 import { tmdbErrorMessage } from '../../lib/tmdb.ts';
 import { fetchRelatedTitles } from '../../lib/recommendations.ts';
 import { useAsync } from '../../lib/useAsync.ts';
 import { recordWatch } from '../../lib/watchHistory.ts';
 import { getWatchProgress, saveWatchProgress } from '../../lib/watchProgress.ts';
+import { fetchImdbId } from '../../services/externalIds.ts';
+import { resolveStreams, type StreamResult } from '../../services/streamResolver.ts';
 import { fetchSeasonEpisodes, type Episode } from './api/episodesApi.ts';
 import { fetchPlayableTitle, isNotFound } from './api/playbackApi.ts';
 import type { PlayableTitle, SeasonSummary } from './types.ts';
@@ -43,8 +57,8 @@ import { parsePlayerEvent, vidkingEmbedUrl } from './vidking.ts';
 import './PlayerPage.css';
 
 const APP_TITLE = 'Noelflix';
-/** Don't write every ~5s "timeupdate" ping; a play/pause/seek/completion always writes immediately. */
-const MIN_PROGRESS_SAVE_INTERVAL_MS = 15_000;
+/** Don't write every ~5s playback ping; a play/pause/seek/completion always writes immediately. */
+const MIN_PROGRESS_SAVE_INTERVAL_MS = 10_000;
 
 interface EpisodeRef {
   season: number;
@@ -116,6 +130,64 @@ function useResumePoint(
   return state;
 }
 
+type StreamsState =
+  | { status: 'loading' }
+  | { status: 'ready'; streams: StreamResult[] }
+  | { status: 'unavailable' };
+
+/**
+ * Resolves playable streams for the title (and, for TV, the episode
+ * currently selected): TMDB id → IMDB id (services/externalIds.ts) → the
+ * stream resolver (services/streamResolver.ts), using the viewer's own
+ * resolver API key from Settings when they've saved one. `'unavailable'`
+ * covers every reason there's nothing to play — no IMDB id, a resolver
+ * error, or an empty response — so the caller has one fallback branch
+ * instead of several.
+ */
+function useResolvedStreams(
+  tmdbId: number | undefined,
+  mediaType: MediaType,
+  season: number,
+  episode: number,
+): StreamsState {
+  const [state, setState] = useState<StreamsState>({ status: 'loading' });
+
+  useEffect(() => {
+    if (!tmdbId) return;
+    let cancelled = false;
+    setState({ status: 'loading' });
+
+    (async () => {
+      const imdbId = await fetchImdbId(tmdbId, mediaType).catch((error: unknown) => {
+        console.error('Could not resolve IMDB id', error);
+        return null;
+      });
+      if (!imdbId) {
+        if (!cancelled) setState({ status: 'unavailable' });
+        return;
+      }
+
+      const uid = currentUserId();
+      const apiKey = uid ? await getStreamApiKey(uid) : '';
+      const streams = await resolveStreams(
+        imdbId,
+        mediaType,
+        mediaType === 'tv' ? season : undefined,
+        mediaType === 'tv' ? episode : undefined,
+        apiKey || null,
+      );
+      if (cancelled) return;
+      setState(streams.length > 0 ? { status: 'ready', streams } : { status: 'unavailable' });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tmdbId, mediaType, season, episode]);
+
+  return state;
+}
+
 function PlayerScreen({
   id,
   mediaType,
@@ -131,9 +203,7 @@ function PlayerScreen({
   const resumePoint = useResumePoint(id, mediaType, previewSeconds);
 
   // The episode actually loaded in the player right now (TV only). Seeded
-  // from the saved resume point once that's known (defaulting to S1E1), and
-  // kept in sync with VidKing's own `nextEpisode` auto-advance via its
-  // postMessage events (see the message listener below).
+  // from the saved resume point once that's known (defaulting to S1E1).
   const [playing, setPlaying] = useState<EpisodeRef>({ season: 1, episode: 1 });
   const seededRef = useRef(false);
   useEffect(() => {
@@ -141,6 +211,8 @@ function PlayerScreen({
     seededRef.current = true;
     if (resumePoint.episode) setPlaying(resumePoint.episode);
   }, [mediaType, resumePoint.ready, resumePoint.episode]);
+
+  const streamsState = useResolvedStreams(title?.id, mediaType, playing.season, playing.episode);
 
   // A "More Like This" card swaps the id without leaving the page.
   useEffect(() => {
@@ -159,12 +231,8 @@ function PlayerScreen({
   }, [title]);
 
   // Marks the title as watched (Firestore `watchProgress`, which backs the
-  // home page's "Shows You've Watched" row) as soon as it's opened, the same
-  // "watched" = "opened the player page" definition watchHistory.ts already
-  // uses. Without this, the row depended entirely on VidKing's own
-  // postMessage progress pings (below) ever arriving — which don't always
-  // fire, so a title played start to finish could still never show up.
-  // Only fires once per title (`hadSavedProgress`): a title already resuming
+  // home page's "Shows You've Watched" row) as soon as it's opened. Only
+  // fires once per title (`hadSavedProgress`): a title already resuming
   // from a previous watchProgress doc has already made it into the row.
   useEffect(() => {
     if (!title || !resumePoint.ready || resumePoint.hadSavedProgress) return;
@@ -180,20 +248,54 @@ function PlayerScreen({
     );
   }, [title, resumePoint.ready, resumePoint.hadSavedProgress, resumePoint.seconds, playing]);
 
-  // VidKing reports playback position (and, for TV, auto-advanced episode)
-  // by postMessage; persist it so the title resumes correctly next time (see
-  // lib/watchProgress.ts). `playingRef` lets the listener read the current
+  // `playingRef` lets the progress-saving callbacks below read the current
   // episode without resubscribing every time it changes.
   const playingRef = useRef(playing);
   useEffect(() => {
     playingRef.current = playing;
   }, [playing]);
 
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const lastSaveRef = useRef(0);
   useEffect(() => {
-    if (!title) return;
     lastSaveRef.current = 0;
+  }, [title?.id, playing.season, playing.episode]);
+
+  function persistProgress(
+    currentTimeSeconds: number,
+    durationSeconds: number | null,
+    isMilestone: boolean,
+    completed: boolean,
+  ) {
+    if (!title) return;
+    const now = Date.now();
+    if (!isMilestone && now - lastSaveRef.current < MIN_PROGRESS_SAVE_INTERVAL_MS) return;
+    lastSaveRef.current = now;
+    saveWatchProgress(
+      { id: title.id, mediaType: title.mediaType, name: title.name },
+      {
+        progressSeconds: currentTimeSeconds,
+        durationSeconds,
+        completed,
+        season: title.mediaType === 'tv' ? playingRef.current.season : null,
+        episode: title.mediaType === 'tv' ? playingRef.current.episode : null,
+      },
+    );
+  }
+
+  function handleCustomPlayerProgress(event: VideoPlayerEvent) {
+    persistProgress(
+      event.currentTimeSeconds,
+      event.durationSeconds,
+      event.event !== 'timeupdate',
+      event.event === 'ended',
+    );
+  }
+
+  // VidKing (fallback iframe) reports playback position — and, for TV, its
+  // own auto-advanced episode — by postMessage.
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  useEffect(() => {
+    if (!title || streamsState.status !== 'unavailable') return;
     function handleMessage(event: MessageEvent) {
       const playerEvent = parsePlayerEvent(event, iframeRef.current?.contentWindow ?? null);
       if (!playerEvent) return;
@@ -207,31 +309,23 @@ function PlayerScreen({
       ) {
         setPlaying({ season: playerEvent.season, episode: playerEvent.episode });
       }
-
-      const now = Date.now();
-      const isMilestone = playerEvent.event !== 'timeupdate';
-      if (!isMilestone && now - lastSaveRef.current < MIN_PROGRESS_SAVE_INTERVAL_MS) return;
-      lastSaveRef.current = now;
-      saveWatchProgress(
-        { id: title!.id, mediaType: title!.mediaType, name: title!.name },
-        {
-          progressSeconds: playerEvent.currentTimeSeconds,
-          durationSeconds: playerEvent.durationSeconds,
-          completed: playerEvent.event === 'ended',
-          season: title!.mediaType === 'tv' ? (playerEvent.season ?? current.season) : null,
-          episode: title!.mediaType === 'tv' ? (playerEvent.episode ?? current.episode) : null,
-        },
+      persistProgress(
+        playerEvent.currentTimeSeconds,
+        playerEvent.durationSeconds,
+        playerEvent.event !== 'timeupdate',
+        playerEvent.event === 'ended',
       );
     }
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [title]);
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, streamsState.status]);
 
   const showLoading = result.status === 'loading' || (title != null && !resumePoint.ready);
 
   // Full-bleed black screen with nothing else on it (matches Netflix's own
-  // loading screen, see docs/slices/18-vidsrc-playback.md) — no back button
-  // or page padding until there is something to show.
+  // loading screen) — no back button or page padding until there is
+  // something to show.
   if (showLoading) {
     return (
       <main className="player player--loading" aria-busy="true">
@@ -241,8 +335,7 @@ function PlayerScreen({
   }
 
   // Only honour the saved resume point when it's for the episode actually
-  // about to play; switching episodes (by hand or via VidKing's own
-  // next-episode advance before this reads it) always starts from 0.
+  // about to play; switching episodes always starts from 0.
   const startAtSeconds =
     title?.mediaType === 'tv'
       ? resumePoint.episode?.season === playing.season &&
@@ -265,6 +358,8 @@ function PlayerScreen({
           startAtSeconds={startAtSeconds}
           playing={playing}
           onSelectEpisode={setPlaying}
+          streamsState={streamsState}
+          onCustomPlayerProgress={handleCustomPlayerProgress}
           iframeRef={iframeRef}
         />
       )}
@@ -314,12 +409,16 @@ function TitleState({
   startAtSeconds,
   playing,
   onSelectEpisode,
+  streamsState,
+  onCustomPlayerProgress,
   iframeRef,
 }: {
   title: PlayableTitle;
   startAtSeconds: number;
   playing: EpisodeRef;
   onSelectEpisode: (episode: EpisodeRef) => void;
+  streamsState: StreamsState;
+  onCustomPlayerProgress: (event: VideoPlayerEvent) => void;
   iframeRef: RefObject<HTMLIFrameElement | null>;
 }) {
   const isTv = title.mediaType === 'tv';
@@ -336,24 +435,34 @@ function TitleState({
     <>
       <div className="player__hero">
         <div className="player__stage">
-          <iframe
-            ref={iframeRef}
-            key={isTv ? `${title.id}-${playing.season}-${playing.episode}` : String(title.id)}
-            className="player__frame"
-            src={vidkingEmbedUrl(
-              {
-                tmdbId: title.id,
-                mediaType: title.mediaType,
-                season: isTv ? playing.season : undefined,
-                episode: isTv ? playing.episode : undefined,
-              },
-              startAtSeconds,
-            )}
-            title={title.name}
-            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-            allowFullScreen
-            referrerPolicy="strict-origin-when-cross-origin"
-          />
+          {streamsState.status === 'ready' ? (
+            <VideoPlayer
+              key={isTv ? `${title.id}-${playing.season}-${playing.episode}` : String(title.id)}
+              sources={streamsState.streams}
+              startAtSeconds={startAtSeconds}
+              title={title.name}
+              onProgress={onCustomPlayerProgress}
+            />
+          ) : (
+            <iframe
+              ref={iframeRef}
+              key={isTv ? `${title.id}-${playing.season}-${playing.episode}` : String(title.id)}
+              className="player__frame"
+              src={vidkingEmbedUrl(
+                {
+                  tmdbId: title.id,
+                  mediaType: title.mediaType,
+                  season: isTv ? playing.season : undefined,
+                  episode: isTv ? playing.episode : undefined,
+                },
+                startAtSeconds,
+              )}
+              title={title.name}
+              allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          )}
         </div>
 
         <div className="player__topbar">

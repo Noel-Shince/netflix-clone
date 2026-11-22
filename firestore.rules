@@ -33,6 +33,18 @@ service cloud.firestore {
       }
     }
 
+    // Account-level settings (slice 22): currently just the viewer's own
+    // stream resolver API key/token (src/lib/streamSettings.ts). Unlike
+    // profile data below, this is one doc per account, not per profile.
+    match /users/{uid}/settings/preferences {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['streamApiKey'])
+        && (request.resource.data.streamApiKey == null
+          || (request.resource.data.streamApiKey is string
+            && request.resource.data.streamApiKey.size() <= 500));
+    }
+
     // My List (slice 12): one doc per saved title under the viewing profile,
     // owner-only, with the fields checked on every write.
     match /users/{uid}/profiles/{profileId}/myList/{titleKey} {
@@ -70,6 +82,22 @@ service cloud.firestore {
         && (request.resource.data.season == null || request.resource.data.season is int)
         && (request.resource.data.episode == null || request.resource.data.episode is int)
         && request.resource.data.updatedAt == request.time;
+    }
+
+    // TMDB-id -> IMDB-id cache (slice 22, src/services/externalIds.ts), for
+    // the stream resolver. Shared across every viewer rather than per-user —
+    // it only ever caches TMDB's own public data, so there is nothing to
+    // isolate per account — but still signed-in-only, since this is a write
+    // path and the app has no backend to run it through.
+    match /externalIdsCache/{docId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.resource.data.keys().hasOnly(['tmdbId', 'mediaType', 'imdbId', 'cachedAt'])
+        && request.resource.data.tmdbId is int
+        && request.resource.data.mediaType in ['movie', 'tv']
+        && docId == request.resource.data.mediaType + '-' + string(request.resource.data.tmdbId)
+        && (request.resource.data.imdbId == null || request.resource.data.imdbId is string)
+        && request.resource.data.cachedAt == request.time;
     }
   }
 }
