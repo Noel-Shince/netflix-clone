@@ -48,7 +48,7 @@ with a documented placeholder for Noel's own resolver API, instead of only the V
   (see the type in `streamResolver.ts`). Each entry is validated field-by-field before use —
   external HTTP responses are not trusted blindly.
 - **Why quality switching swaps the whole stream, not an HLS level:** the resolver's response is a
-  list of *separate* stream URLs (e.g. different mirrors/qualities), not one adaptive manifest
+  list of _separate_ stream URLs (e.g. different mirrors/qualities), not one adaptive manifest
   with multiple renditions, so "quality" in the UI re-attaches a new Hls instance to a different
   `StreamResult`, preserving the current position and play state (`VideoPlayer.tsx`,
   `pendingResumeRef`/`wasPlayingRef`).

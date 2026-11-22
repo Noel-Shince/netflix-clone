@@ -108,6 +108,7 @@ export function VideoPlayer({ sources, startAtSeconds, title, onProgress }: Vide
     hlsRef.current = null;
 
     function seekAndMaybePlay() {
+      if (!video) return;
       if (pendingResumeRef.current > 0) video.currentTime = pendingResumeRef.current;
       if (wasPlayingRef.current) video.play().catch(() => {});
     }
@@ -151,6 +152,7 @@ export function VideoPlayer({ sources, startAtSeconds, title, onProgress }: Vide
     if (!video) return;
 
     function emit(event: VideoPlayerEvent['event']) {
+      if (!video) return;
       onProgress({
         event,
         currentTimeSeconds: video.currentTime,

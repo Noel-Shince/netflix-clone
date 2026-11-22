@@ -131,9 +131,7 @@ function useResumePoint(
 }
 
 type StreamsState =
-  | { status: 'loading' }
-  | { status: 'ready'; streams: StreamResult[] }
-  | { status: 'unavailable' };
+  { status: 'loading' } | { status: 'ready'; streams: StreamResult[] } | { status: 'unavailable' };
 
 /**
  * Resolves playable streams for the title (and, for TV, the episode

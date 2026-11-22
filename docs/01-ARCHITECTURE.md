@@ -29,20 +29,20 @@ merge to `main` (slice 08, ADR-8).
 ## Stack
 
 | Concern                 | Choice                                                                      | Version at scaffold |
-| ----------------------- | --------------------------------------------------------------------------- | -------------------- |
-| UI library              | React                                                                       | 19                   |
-| Build tool / dev server | Vite (`@vitejs/plugin-react`)                                               | 8                    |
-| Routing                 | React Router (`react-router`, added in slice 01)                            | 8                    |
-| Auth                    | Firebase Authentication, email/password (slice 05)                          | —                    |
-| Movie data              | TMDB API v3 endpoints, v4 bearer token (slice 03)                           | —                    |
-| Playback                | VidKing iframe (slice 21), falling back from a custom HLS.js player backed  | —                    |
-|                          | by a pluggable stream resolver (slice 22)                                   |                      |
-| Styling                 | Plain CSS, one file per component, global tokens in `src/styles/global.css` | —                    |
-| Lint                    | oxlint (Vite's current template default) with React rules                   | 1.x                  |
-| Format                  | Prettier                                                                    | 3.x                  |
-| CI / CD                 | GitHub Actions: lint, format check, type-check, build; deploy on `main`     | —                    |
-| Language                | TypeScript, strict mode                                                     | 7.x                  |
-| Hosting                 | Firebase Hosting (slice 08)                                                 | —                    |
+| ----------------------- | --------------------------------------------------------------------------- | ------------------- |
+| UI library              | React                                                                       | 19                  |
+| Build tool / dev server | Vite (`@vitejs/plugin-react`)                                               | 8                   |
+| Routing                 | React Router (`react-router`, added in slice 01)                            | 8                   |
+| Auth                    | Firebase Authentication, email/password (slice 05)                          | —                   |
+| Movie data              | TMDB API v3 endpoints, v4 bearer token (slice 03)                           | —                   |
+| Playback                | VidKing iframe (slice 21), falling back from a custom HLS.js player backed  | —                   |
+|                         | by a pluggable stream resolver (slice 22)                                   |                     |
+| Styling                 | Plain CSS, one file per component, global tokens in `src/styles/global.css` | —                   |
+| Lint                    | oxlint (Vite's current template default) with React rules                   | 1.x                 |
+| Format                  | Prettier                                                                    | 3.x                 |
+| CI / CD                 | GitHub Actions: lint, format check, type-check, build; deploy on `main`     | —                   |
+| Language                | TypeScript, strict mode                                                     | 7.x                 |
+| Hosting                 | Firebase Hosting (slice 08)                                                 | —                   |
 
 ## ADR-1: Vite over Create React App
 
@@ -108,7 +108,7 @@ public/            Static files served as-is (favicon)
     fix is a small serverless proxy (e.g. a Firebase Cloud Function) that holds the token; out of
     scope for v1, noted as a possible later slice.
   - **Slice 22 addendum:** the stream resolver's own base URL (`services/streamResolver.ts`) is a
-    plain hardcoded constant, not an env var — it isn't secret, it's an endpoint. What *is*
+    plain hardcoded constant, not an env var — it isn't secret, it's an endpoint. What _is_
     sensitive is the viewer's resolver API key/token, which never touches a bundle at all: it's
     typed into Settings and stored per-account in Firestore (`lib/streamSettings.ts`), read back
     only for that account's own requests.
@@ -262,7 +262,7 @@ public/            Static files served as-is (favicon)
   — Noel's own reason for commissioning this slice.
 - **Why `RESOLVER_BASE_URL` is a hardcoded constant, not an env var:** see ADR-4's slice 22
   addendum — it is a placeholder for an endpoint, not a secret, and the file-level comment makes
-  it the one obvious place to paste a real one. The viewer's own resolver key/token *is* sensitive
+  it the one obvious place to paste a real one. The viewer's own resolver key/token _is_ sensitive
   and goes through Settings → Firestore instead (`lib/streamSettings.ts`), never the bundle.
 - **Why the mock data, not an empty fallback until a real resolver exists:** a stream resolver's
   response shape can only really be exercised by playing something; shipping the player with a

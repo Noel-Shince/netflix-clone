@@ -55,9 +55,9 @@ export function SettingsPage() {
           Streaming
         </h2>
         <p className="settings__section-hint">
-          Paste your stream resolver's API key or token here. It's sent as the{' '}
-          <code>config</code> query parameter on every stream lookup — see{' '}
-          <code>src/services/streamResolver.ts</code> for where that endpoint is configured.
+          Paste your stream resolver's API key or token here. It's sent as the <code>config</code>{' '}
+          query parameter on every stream lookup — see <code>src/services/streamResolver.ts</code>{' '}
+          for where that endpoint is configured.
         </p>
         <form className="settings__form" onSubmit={handleSave}>
           <label className="settings__label" htmlFor="stream-api-key">

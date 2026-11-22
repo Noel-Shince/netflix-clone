@@ -24,7 +24,12 @@
   flex-direction: column;
   gap: 10px;
   padding: 48px var(--page-gutter) 20px;
-  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.75) 60%, rgba(0, 0, 0, 0.92) 100%);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.75) 60%,
+    rgba(0, 0, 0, 0.92) 100%
+  );
   cursor: default;
   opacity: 1;
   transition: opacity 0.25s ease;
