@@ -1,5 +1,11 @@
-# Deploys main to Firebase Hosting (live channel) on every push, so the live
-# demo is always exactly what is on main. See docs/slices/08-deploy.md.
+# Deploys main to Firebase Hosting (live channel), gated on CI (lint, type
+# check, build, Playwright E2E — see ci.yml) passing for that same commit, so
+# the live demo never ships a broken build or a regression E2E would have
+# caught. See docs/slices/08-deploy.md and docs/slices/20-e2e-tests.md.
+#
+# Runs as a follow-up to the CI workflow (`workflow_run`) instead of on push
+# directly, so a push to main only reaches this job once CI has finished and
+# reports its real pass/fail for that commit.
 #
 # Needs repository secrets (Settings > Secrets and variables > Actions):
 #   FIREBASE_SERVICE_ACCOUNT  JSON key of a service account with the
@@ -9,8 +15,9 @@
 name: Deploy
 
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
   workflow_dispatch:
 
 # Least privilege for GITHUB_TOKEN: read code, and let the Firebase action
@@ -26,6 +33,12 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # workflow_dispatch is a manual, explicit deploy; a workflow_run trigger
+    # only reaches here when CI finished successfully on main.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
     env:
       HAS_DEPLOY_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
     steps:
@@ -34,6 +47,10 @@ jobs:
         run: echo "::notice::FIREBASE_SERVICE_ACCOUNT secret not set; skipping deploy."
       - uses: actions/checkout@v4
         if: env.HAS_DEPLOY_KEY == 'true'
+        with:
+          # Deploy the exact commit CI just checked, not whatever main is by
+          # the time this runs (workflow_run otherwise checks out main's tip).
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         if: env.HAS_DEPLOY_KEY == 'true'
         with:
