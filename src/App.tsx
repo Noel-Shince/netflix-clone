@@ -28,6 +28,7 @@ import { ProfileEditorPage } from './features/profiles/ProfileEditorPage.tsx';
 import { ProfileProvider } from './features/profiles/ProfileProvider.tsx';
 import { ProfilesPage } from './features/profiles/ProfilesPage.tsx';
 import { RequireProfile } from './features/profiles/RequireProfile.tsx';
+import { SettingsPage } from './features/settings/SettingsPage.tsx';
 import { useProfiles } from './lib/profileContext.ts';
 import { setMyListOwner } from './lib/myList.ts';
 import { setWatchProgressOwner } from './lib/watchProgress.ts';
@@ -100,6 +101,7 @@ function App() {
                   <Route path={ROUTES.newAndPopular} element={<NewAndPopularPage />} />
                   <Route path={ROUTES.myList} element={<MyListPage />} />
                   <Route path={ROUTES.languages} element={<LanguagesPage />} />
+                  <Route path={ROUTES.settings} element={<SettingsPage />} />
                   <Route path={SEARCH_PATH} element={<SearchPage />} />
                 </Route>
                 <Route path="/player/:id" element={<PlayerPage />} />

@@ -14,6 +14,7 @@ export const ROUTES = {
   newAndPopular: '/latest',
   myList: '/my-list',
   languages: '/languages',
+  settings: '/settings',
 } as const;
 
 /** The player page reads this to resume a trailer where a preview left off. */
