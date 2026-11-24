@@ -15,14 +15,15 @@ test('browse the home page and open a title in the player', async ({ page }) => 
 
   await expect(page).toHaveURL(/\/player\//);
 
-  // The player either embeds the title via VidKing, or (TMDB lookup
-  // failure) shows the player's own error notice with a way back home —
-  // either is a legitimate outcome of "open a title", unlike a crash.
+  // The player either embeds the title via vidsrc.to, or (TMDB/IMDB lookup
+  // failure, or a resolver auth error) shows the player's own notice with a
+  // way back home — either is a legitimate outcome of "open a title", unlike
+  // a crash.
   const stage = page.locator('.player__frame');
   const notice = page.locator('.player__notice');
   await expect(stage.or(notice)).toBeVisible({ timeout: 15_000 });
   if (await stage.isVisible()) {
-    await expect(stage).toHaveAttribute('src', /vidking\.net/);
+    await expect(stage).toHaveAttribute('src', /vidsrc\.to/);
     await expect(page.getByRole('heading', { name: titleName })).toBeVisible();
   }
 });

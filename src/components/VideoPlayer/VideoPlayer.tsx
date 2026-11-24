@@ -10,7 +10,7 @@
  * position and play state survive the switch (see `attachSource` below).
  *
  * Reports every meaningful player event through `onProgress` — the same
- * shape `features/playback/vidking.ts`'s `parsePlayerEvent` already
+ * shape `features/playback/vidsrc.ts`'s `parsePlayerEvent` already
  * produced — so `PlayerPage.tsx` saves resume position exactly as before.
  */
 import Hls from 'hls.js';
