@@ -6,11 +6,14 @@
  *
  * Until a real resolver endpoint is configured (see the TODO in
  * streamResolver.ts), that always returns a small mock stream, so this page
- * works end to end out of the box. Whenever it instead returns no streams
+ * works end to end out of the box. Whenever it instead reports no streams
  * — a misconfigured endpoint, a lookup failure, or simply before it has
- * answered — this falls back to the VidKing (vidking.net) iframe embed
- * (`vidking.ts`), the player from the previous slice, so a broken resolver
- * never breaks playback.
+ * answered — this falls back to the vidsrc.to iframe embed (`vidsrc.ts`),
+ * so a broken or rate-limited resolver never breaks playback. A resolver
+ * 401/403 is different: that means the viewer's debrid token (Real-Debrid /
+ * TorBox) is missing or expired, a subscription problem rather than a
+ * transient failure, so it shows an explicit message instead of silently
+ * falling back to a lesser (ad-supported, no resume tracking) source.
  *
  * TV shows get this app's own season/episode selector below the player
  * (fetched from TMDB's `/tv/{id}/season/{n}`); picking an episode re-resolves
@@ -41,7 +44,7 @@ import { TitleRow } from '../../components/TitleRow/TitleRow.tsx';
 import { VideoPlayer, type VideoPlayerEvent } from '../../components/VideoPlayer/VideoPlayer.tsx';
 import { currentUserId } from '../../lib/firebase.ts';
 import type { MediaType } from '../../lib/media.ts';
-import { RESUME_PARAM } from '../../lib/routes.ts';
+import { RESUME_PARAM, ROUTES } from '../../lib/routes.ts';
 import { getStreamApiKey } from '../../lib/streamSettings.ts';
 import { tmdbErrorMessage } from '../../lib/tmdb.ts';
 import { fetchRelatedTitles } from '../../lib/recommendations.ts';
@@ -53,7 +56,7 @@ import { resolveStreams, type StreamResult } from '../../services/streamResolver
 import { fetchSeasonEpisodes, type Episode } from './api/episodesApi.ts';
 import { fetchPlayableTitle, isNotFound } from './api/playbackApi.ts';
 import type { PlayableTitle, SeasonSummary } from './types.ts';
-import { parsePlayerEvent, vidkingEmbedUrl } from './vidking.ts';
+import { parsePlayerEvent, vidsrcEmbedUrl } from './vidsrc.ts';
 import './PlayerPage.css';
 
 const APP_TITLE = 'Noelflix';
@@ -131,16 +134,21 @@ function useResumePoint(
 }
 
 type StreamsState =
-  { status: 'loading' } | { status: 'ready'; streams: StreamResult[] } | { status: 'unavailable' };
+  | { status: 'loading' }
+  | { status: 'ready'; streams: StreamResult[] }
+  /** No custom-player streams, but the imdbId needed for the fallback iframe (or null if TMDB has none for this title). */
+  | { status: 'unavailable'; imdbId: string | null }
+  /** Resolver rejected the request (401/403): the debrid token is missing/invalid/expired. */
+  | { status: 'auth-error' };
 
 /**
  * Resolves playable streams for the title (and, for TV, the episode
  * currently selected): TMDB id → IMDB id (services/externalIds.ts) → the
  * stream resolver (services/streamResolver.ts), using the viewer's own
  * resolver API key from Settings when they've saved one. `'unavailable'`
- * covers every reason there's nothing to play — no IMDB id, a resolver
- * error, or an empty response — so the caller has one fallback branch
- * instead of several.
+ * covers every reason to fall back to the iframe embed instead — no IMDB
+ * id, a resolver error, or an empty response. `'auth-error'` is kept
+ * separate so the UI can say so, rather than silently falling back.
  */
 function useResolvedStreams(
   tmdbId: number | undefined,
@@ -161,13 +169,13 @@ function useResolvedStreams(
         return null;
       });
       if (!imdbId) {
-        if (!cancelled) setState({ status: 'unavailable' });
+        if (!cancelled) setState({ status: 'unavailable', imdbId: null });
         return;
       }
 
       const uid = currentUserId();
       const apiKey = uid ? await getStreamApiKey(uid) : '';
-      const streams = await resolveStreams(
+      const result = await resolveStreams(
         imdbId,
         mediaType,
         mediaType === 'tv' ? season : undefined,
@@ -175,7 +183,13 @@ function useResolvedStreams(
         apiKey || null,
       );
       if (cancelled) return;
-      setState(streams.length > 0 ? { status: 'ready', streams } : { status: 'unavailable' });
+      if (result.status === 'auth-error') {
+        setState({ status: 'auth-error' });
+      } else if (result.status === 'ok') {
+        setState({ status: 'ready', streams: result.streams });
+      } else {
+        setState({ status: 'unavailable', imdbId });
+      }
     })();
 
     return () => {
@@ -293,7 +307,7 @@ function PlayerScreen({
   // own auto-advanced episode — by postMessage.
   const iframeRef = useRef<HTMLIFrameElement>(null);
   useEffect(() => {
-    if (!title || streamsState.status !== 'unavailable') return;
+    if (!title || streamsState.status !== 'unavailable' || !streamsState.imdbId) return;
     function handleMessage(event: MessageEvent) {
       const playerEvent = parsePlayerEvent(event, iframeRef.current?.contentWindow ?? null);
       if (!playerEvent) return;
@@ -441,14 +455,16 @@ function TitleState({
               title={title.name}
               onProgress={onCustomPlayerProgress}
             />
-          ) : (
+          ) : streamsState.status === 'auth-error' ? (
+            <StreamAuthErrorNotice />
+          ) : streamsState.status === 'unavailable' && streamsState.imdbId ? (
             <iframe
               ref={iframeRef}
               key={isTv ? `${title.id}-${playing.season}-${playing.episode}` : String(title.id)}
               className="player__frame"
-              src={vidkingEmbedUrl(
+              src={vidsrcEmbedUrl(
                 {
-                  tmdbId: title.id,
+                  imdbId: streamsState.imdbId,
                   mediaType: title.mediaType,
                   season: isTv ? playing.season : undefined,
                   episode: isTv ? playing.episode : undefined,
@@ -460,6 +476,8 @@ function TitleState({
               allowFullScreen
               referrerPolicy="strict-origin-when-cross-origin"
             />
+          ) : (
+            <StreamUnavailableNotice />
           )}
         </div>
 
@@ -681,6 +699,36 @@ function MoreLikeThis({ id, mediaType }: { id: number; mediaType: MediaType }) {
 /** Plain black, centered red spinner — see `.player--loading` in PlayerPage.css. */
 function LoadingState() {
   return <span className="player__spinner" aria-hidden="true" />;
+}
+
+/** Shown instead of the player/fallback iframe when the resolver rejects the debrid token (401/403). */
+function StreamAuthErrorNotice() {
+  return (
+    <div className="player__stage player__stage--message">
+      <div className="player__notice" role="alert">
+        <p className="player__notice-text">
+          Streaming requires an active Real-Debrid or TorBox subscription. Please check your
+          settings.
+        </p>
+        <div className="player__actions">
+          <Link className="player__button" to={ROUTES.settings}>
+            Go to settings
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Shown when there's nothing playable at all — TMDB has no IMDB id for this title, so even the fallback embed can't be built. */
+function StreamUnavailableNotice() {
+  return (
+    <div className="player__stage player__stage--message">
+      <div className="player__notice" role="alert">
+        <p className="player__notice-text">This title isn’t available to stream right now.</p>
+      </div>
+    </div>
+  );
 }
 
 interface ErrorStateProps {

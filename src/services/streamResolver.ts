@@ -7,9 +7,16 @@
  * pointing at a public test HLS stream, so the custom player
  * (`components/VideoPlayer/VideoPlayer.tsx`) works end to end immediately —
  * play/pause, seek, quality switching, the lot — without waiting on a real
- * resolver. `PlayerPage.tsx` falls back to the VidKing iframe embed
- * (`features/playback/vidking.ts`) whenever this returns an empty array or
- * throws, so a broken or rate-limited resolver never breaks playback.
+ * resolver. `PlayerPage.tsx` falls back to the vidsrc.to iframe embed
+ * (`features/playback/vidsrc.ts`) whenever this returns no streams and no
+ * auth error, so a broken or rate-limited resolver never breaks playback.
+ *
+ * A 401/403 from the resolver means the configured debrid token (Real-Debrid
+ * / TorBox, see `lib/streamSettings.ts`) is missing, invalid, or expired —
+ * that's a subscription problem, not a transient resolver failure, so it's
+ * reported back distinctly (`status: 'auth-error'`) instead of silently
+ * falling back to the iframe embed, which would just as silently play a
+ * worse (ad-supported, no resume tracking) source for no visible reason.
  */
 import type { MediaType } from '../lib/media.ts';
 
@@ -23,6 +30,13 @@ export interface StreamResult {
   /** Audio language labels this specific stream offers, if the resolver reports them. */
   audioTracks?: string[];
 }
+
+export type ResolveStreamsResult =
+  | { status: 'ok'; streams: StreamResult[] }
+  /** Debrid token missing/invalid/expired (resolver returned 401/403). */
+  | { status: 'auth-error' }
+  /** Any other failure, or simply no streams found — safe to fall back silently. */
+  | { status: 'error' };
 
 // ─────────────────────────────────────────────────────────────────────────
 // STREAM RESOLVER PLACEHOLDER
@@ -78,9 +92,10 @@ function isStreamResult(value: unknown): value is StreamResult {
 
 /**
  * Looks up playable streams for a title (or, for TV, one specific episode).
- * Returns `[]` on any failure — a non-2xx response, a timeout, or a reply
- * that isn't the expected JSON array — so callers only need to handle "got
- * streams" vs. "didn't", never a thrown error.
+ * Distinguishes an auth/subscription failure (401/403 — bad or expired
+ * debrid token) from every other failure (network error, timeout, bad
+ * response shape, or just no streams found), since only the latter is safe
+ * to fall back from silently.
  */
 export async function resolveStreams(
   imdbId: string,
@@ -88,8 +103,8 @@ export async function resolveStreams(
   season?: number,
   episode?: number,
   configToken?: string | null,
-): Promise<StreamResult[]> {
-  if (!RESOLVER_BASE_URL) return MOCK_STREAMS;
+): Promise<ResolveStreamsResult> {
+  if (!RESOLVER_BASE_URL) return { status: 'ok', streams: MOCK_STREAMS };
 
   const path =
     type === 'tv'
@@ -100,12 +115,14 @@ export async function resolveStreams(
 
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(RESOLVER_TIMEOUT_MS) });
+    if (response.status === 401 || response.status === 403) return { status: 'auth-error' };
     if (!response.ok) throw new Error(`Stream resolver returned HTTP ${response.status}`);
     const data: unknown = await response.json();
-    if (!Array.isArray(data)) return [];
-    return data.filter(isStreamResult);
+    if (!Array.isArray(data)) return { status: 'error' };
+    const streams = data.filter(isStreamResult);
+    return streams.length > 0 ? { status: 'ok', streams } : { status: 'error' };
   } catch (error) {
     console.error('Stream resolver request failed', error);
-    return [];
+    return { status: 'error' };
   }
 }

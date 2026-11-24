@@ -1,7 +1,7 @@
 /**
  * Player data from TMDB: one movie- or TV-details request, mapped onto the
  * playback types. The id TMDB returns here goes straight into VidKing's
- * embed URL (vidking.ts), which plays the actual title rather than a trailer.
+ * embed URL (vidsrc.ts), which plays the actual title rather than a trailer.
  */
 import type { MediaType } from '../../../lib/media.ts';
 import { TmdbError, tmdbGet, tmdbImageUrl } from '../../../lib/tmdb.ts';
